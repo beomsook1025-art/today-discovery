@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 
 <meta name="theme-color" content="#244A3B">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4" onload="window.dispatchEvent(new Event('supabase-ready'))">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 document.addEventListener("keydown",(e)=>{if(e.key==="Escape") closeAuth();});
 document.addEventListener("click",(e)=>{
   const modal=document.getElementById("authModal");
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v21</title>
+<title>오늘의 나 발견 · v24</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -1110,11 +1110,11 @@ function getSupabaseClient(){
 }
 
 
-let authMode = "login";
-let currentUser = null;
-let supabaseClient = null;
-const SUPABASE_URL = "https://peqeaxumtiiflkstsnln.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ofqvZyCsYYbXUaCZIz5hGA_dxUS82G4";
+
+
+
+
+
 
 function getSupabaseClient(){
   if(supabaseClient) return supabaseClient;
@@ -1126,12 +1126,11 @@ function getSupabaseClient(){
 function openAuth(mode="login"){
   authMode=mode;
   const modal=document.getElementById("authModal");
-  if(!modal){ alert("로그인 창 요소를 찾지 못했어요."); return false; }
-  updateAuthUI();
+  if(!modal){alert("로그인 창을 불러오지 못했어요.\n페이지를 새로고침해 주세요.");return false;}
+  if(typeof updateAuthUI==="function") updateAuthUI();
   modal.classList.add("show");
   modal.style.display="flex";
   modal.setAttribute("aria-hidden","false");
-  setTimeout(()=>document.getElementById("authEmail")?.focus(),60);
   return false;
 }
 function closeAuth(){
@@ -1322,6 +1321,31 @@ let toastTimer; function toast(msg){const t=document.getElementById('toast');t.t
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 }
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
+  document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
+  document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
+  document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
+  document.getElementById("authModal")?.addEventListener("click",e=>{if(e.target.id==="authModal")closeAuth();});
+  if(typeof updateAccountUI==="function") updateAccountUI();
+});
 </script>
+
+<div id="authModal" class="premium-modal" aria-hidden="true">
+  <div class="premium-sheet" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div class="modal-head"><div class="wordmark">오늘의 나 발견</div><button class="icon-btn" id="authCloseButton" type="button" aria-label="닫기">×</button></div>
+    <div class="eyebrow">ACCOUNT</div>
+    <h2 id="authTitle">로그인</h2>
+    <p class="premium-sub">기록과 알림을 저장하려면 계정이 필요해요.</p>
+    <input id="authEmail" class="text-input" type="email" autocomplete="email" placeholder="이메일">
+    <input id="authPassword" class="text-input" type="password" autocomplete="current-password" placeholder="비밀번호">
+    <button class="primary" id="authSubmit" type="button" style="width:100%;margin-top:12px">로그인</button>
+    <button class="secondary" id="authModeButton" type="button" style="width:100%;margin-top:8px">회원가입으로 바꾸기</button>
+    <button class="secondary" id="authTest" type="button" style="width:100%;margin-top:8px">Supabase 연결 테스트</button>
+    <div id="authMessage" style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5"></div>
+    <div id="authStatus" style="font-size:11px;margin-top:8px"></div>
+  </div>
+</div>
 </body>
 </html>
