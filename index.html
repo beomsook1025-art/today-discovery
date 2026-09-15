@@ -10,6 +10,15 @@ document.addEventListener("click",(e)=>{
   const modal=document.getElementById("authModal");
   if(modal && e.target===modal) closeAuth();
 });
+
+document.addEventListener("click",(e)=>{
+  const btn=e.target.closest("#accountButton");
+  if(btn){
+    e.preventDefault();
+    e.stopPropagation();
+    openAuth();
+  }
+}, true);
 </script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -18,7 +27,7 @@ document.addEventListener("click",(e)=>{
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v19</title>
+<title>오늘의 나 발견 · v20</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -195,7 +204,7 @@ button{touch-action:manipulation}
 .mobile-install-banner .txt{font-size:11px;line-height:1.45}
 .mobile-install-banner .txt b{font-size:12px}
 .install-btn{border:0;border-radius:11px;padding:10px 12px;background:#fff;color:#244A3B;font-weight:900;white-space:nowrap}
-.premium-modal{display:none;position:fixed;inset:0;background:rgba(18,25,22,.42);z-index:130;align-items:flex-end}
+.premium-modal{display:none;pointer-events:auto;z-index:9999;position:fixed;inset:0;background:rgba(18,25,22,.42);z-index:130;align-items:flex-end}
 .premium-modal.show{display:flex}
 .premium-sheet{width:min(430px,100%);margin:0 auto;background:#fff;border-radius:25px 25px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -20px 55px rgba(0,0,0,.16)}
 .premium-sheet h2{font-size:24px;letter-spacing:-1px;margin:9px 0 6px}
@@ -427,7 +436,7 @@ button{touch-action:manipulation}
   <div class="card" style="padding:18px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div><div class="eyebrow">ACCOUNT</div><div id="accountText" style="font-size:13px;font-weight:900;margin-top:5px">로그인하지 않았어요.</div></div>
-      <button class="secondary" id="accountButton" onclick="openAuth()">로그인</button>
+      <button class="secondary" id="accountButton" type="button" onclick="openAuth(); return false;">로그인</button>
     </div>
   </div>
 </div>
@@ -1085,18 +1094,24 @@ function getSupabaseClient(){
 }
 
 function openAuth(mode="login"){
-  authMode=mode;
+  authMode = mode;
+  const modal = document.getElementById("authModal");
+  if(!modal){
+    alert("로그인 창을 불러오지 못했어요. 페이지를 새로고침해 주세요.");
+    return false;
+  }
   updateAuthModeUI();
-  const modal=document.getElementById("authModal");
-  if(!modal){console.error("authModal missing");return;}
+  modal.style.display = "flex";
   modal.classList.add("show");
   modal.setAttribute("aria-hidden","false");
   setTimeout(()=>document.getElementById("authEmail")?.focus(),50);
+  return false;
 }
 function closeAuth(){
   const modal=document.getElementById("authModal");
   if(!modal)return;
   modal.classList.remove("show");
+  modal.style.display="none";
   modal.setAttribute("aria-hidden","true");
 }
 
@@ -1121,16 +1136,10 @@ async function testSupabaseConnection(){
     if(status) status.innerHTML='<div class="auth-error">'+escapeHTML(msg)+'</div>';
   }
 }
-function toggleAuthMode(){authMode=authMode==="login"?"signup":"login";updateAuthModeUI();}
-function updateAuthModeUI(){
-  const title=document.getElementById("authTitle");
-  const submit=document.getElementById("authSubmit");
-  const switchBtn=document.querySelector("#authModal .secondary");
-  const msg=document.getElementById("authMessage");
-  if(title) title.textContent=authMode==="login"?"로그인":"회원가입";
-  if(submit) submit.textContent=authMode==="login"?"로그인":"회원가입";
-  if(switchBtn) switchBtn.textContent=authMode==="login"?"회원가입으로 바꾸기":"로그인으로 바꾸기";
-  if(msg) msg.textContent="";
+function toggleAuthMode(){
+  authMode = authMode==="login" ? "signup" : "login";
+  updateAuthModeUI();
+  return false;
 }
 
 async function submitAuth(){
