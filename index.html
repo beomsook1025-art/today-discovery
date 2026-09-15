@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+
+<meta name="theme-color" content="#244A3B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="나 발견">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오늘의 나 발견 · v8</title>
+<style>
+:root{
+  --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
+  --text:#16201B; --muted:#7B847F; --line:#E6EAE4;
+  --green:#244A3B; --green2:#DDEBE3; --mint:#BFD9C9;
+  --purple:#7D68D8; --purple2:#EEEAFE;
+  --orange:#F2A85B; --orange2:#FFF0DE;
+  --shadow:0 12px 30px rgba(24,42,34,.07);
+  --radius:22px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#EDEFEA;color:var(--text);
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+body{min-height:100vh}
+.app{max-width:430px;min-height:100vh;margin:0 auto;background:var(--bg);position:relative;overflow:hidden}
+.top-safe{height:env(safe-area-inset-top)}
+.screen{display:none;min-height:100vh;padding:18px 18px 98px}
+.screen.active{display:block}
+.header{display:flex;align-items:center;justify-content:space-between;margin:4px 0 20px}
+.wordmark{font-weight:900;letter-spacing:-1px;font-size:17px}
+.icon-btn{width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:50%;display:grid;place-items:center;color:#56615b}
+.icon{font-size:18px;line-height:1}
+.hero{
+  background:linear-gradient(145deg,#EDF3EC 0%,#FFFDF8 62%,#F1EFFE 100%);
+  border:1px solid #E5EBE3;border-radius:28px;padding:25px 23px 22px;box-shadow:var(--shadow);
+  margin-bottom:16px;position:relative;overflow:hidden
+}
+.hero:after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;right:-48px;top:-48px;background:rgba(191,217,201,.33)}
+.eyebrow{font-size:12px;font-weight:850;color:#668072;letter-spacing:.08em}
+.hero h1{font-size:31px;line-height:1.16;letter-spacing:-1.5px;margin:11px 0 10px}
+.hero p{color:#65706A;line-height:1.62;font-size:14px;margin:0;max-width:290px}
+.primary{
+  border:0;background:var(--green);color:#fff;font-weight:850;border-radius:16px;padding:14px 16px;
+  font-size:14px;cursor:pointer;box-shadow:0 10px 18px rgba(36,74,59,.16)
+}
+.secondary{
+  border:1px solid var(--line);background:#fff;color:var(--text);font-weight:800;border-radius:14px;
+  padding:13px 15px;font-size:14px;cursor:pointer
+}
+.section{margin-top:18px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.section-title{font-weight:900;letter-spacing:-.6px}
+.small-link{font-size:12px;color:var(--muted);font-weight:750;cursor:pointer}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.prompt-card{padding:18px}
+.prompt-label{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:8px}
+.prompt-text{font-size:18px;line-height:1.45;font-weight:850;letter-spacing:-.5px}
+.prompt-foot{display:flex;align-items:center;justify-content:space-between;margin-top:15px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);color:#53635A;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800}
+.progress-card{padding:18px}
+.progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:9px}
+.progress-bar{height:9px;background:#E9ECE8;border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;width:17%;background:linear-gradient(90deg,#6EA488,#244A3B);border-radius:99px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:17px;padding:14px}
+.stat .k{font-size:11px;color:var(--muted);margin-bottom:6px}
+.stat .v{font-size:22px;font-weight:950;letter-spacing:-1px}
+.test-card{padding:18px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.test-title{font-weight:900;font-size:15px}.test-desc{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+.mini-arrow{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:900;flex:0 0 auto}
+.nav{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(430px,100%);
+  padding:9px 16px calc(9px + env(safe-area-inset-bottom));background:rgba(255,255,255,.92);
+  backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);z-index:50
+}
+.nav button{border:0;background:none;color:#8A918D;font-size:10px;font-weight:800;display:flex;flex-direction:column;gap:4px;align-items:center;cursor:pointer;padding:4px}
+.nav button.active{color:var(--green)}
+.nav-dot{font-size:18px;line-height:1}
+.tag-grid{display:flex;flex-wrap:wrap;gap:7px}
+.tag{padding:8px 11px;border-radius:999px;background:var(--green2);color:#3B6353;font-size:12px;font-weight:800}
+.timeline{display:grid;gap:10px}
+.timeline-item{display:flex;gap:12px;padding:15px;border:1px solid var(--line);background:#fff;border-radius:17px}
+.timeline-mark{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:11px;background:#ECF3ED;color:#3E6855;flex:0 0 auto}
+.timeline-date{font-size:11px;color:var(--muted);margin-bottom:3px}.timeline-text{font-size:13px;line-height:1.55;font-weight:750}
+.question-wrap{padding-top:4px}
+.q-top{display:flex;align-items:center;gap:12px;margin-bottom:21px}
+.back{border:0;background:none;font-size:22px;cursor:pointer;color:#48514C}
+.q-progress{height:7px;background:#E9ECE8;border-radius:99px;flex:1;overflow:hidden}
+.q-progress div{height:100%;background:#244A3B;width:0;border-radius:99px}
+.q-count{font-size:11px;color:var(--muted);font-weight:800}
+.question-title{font-size:26px;line-height:1.34;letter-spacing:-1.3px;margin:0 0 8px}
+.question-sub{font-size:13px;color:var(--muted);margin:0 0 19px}
+.option-list{display:grid;gap:9px}
+.option{
+  width:100%;border:1px solid var(--line);background:#fff;border-radius:16px;padding:15px;
+  display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer
+}
+.option.selected{border-color:#5B8A73;background:#F0F7F2;box-shadow:0 0 0 2px rgba(91,138,115,.08)}
+.check{width:22px;height:22px;border:1.5px solid #CDD4CE;border-radius:7px;display:grid;place-items:center;font-size:12px;color:#fff;flex:0 0 auto}
+.option.selected .check{background:#244A3B;border-color:#244A3B}
+.option-text{font-size:14px;font-weight:780;line-height:1.45}
+.q-actions{display:flex;gap:9px;margin-top:18px}.q-actions button{flex:1}
+.result-hero{
+  background:linear-gradient(145deg,#E6F0E8,#FFFDF6 60%,#EFEAFE);padding:24px;border-radius:26px;
+  border:1px solid #E4E8E1;box-shadow:var(--shadow);text-align:center
+}
+.result-orb{width:62px;height:62px;border-radius:50%;background:linear-gradient(145deg,#B8D7C2,#D7C8F5);
+  display:grid;place-items:center;margin:0 auto 13px;font-size:25px}
+.result-hero h2{font-size:26px;letter-spacing:-1.2px;margin:0 0 8px}.result-hero p{color:#68736C;line-height:1.62;font-size:13px;margin:0}
+.score-list{display:grid;gap:10px}
+.score-line{background:#fff;border:1px solid var(--line);padding:14px;border-radius:16px}
+.score-line-top{display:flex;justify-content:space-between;font-size:12px;font-weight:850;margin-bottom:9px}
+.score-track{height:8px;background:#ECEFEC;border-radius:99px;overflow:hidden}.score-fill{height:100%;border-radius:99px;background:#5B8A73}
+.reco{display:grid;gap:10px}
+.reco-item{background:#fff;border:1px solid var(--line);padding:15px;border-radius:17px}
+.reco-badge{font-size:10px;background:var(--orange2);color:#9B6B2E;padding:5px 7px;border-radius:999px;font-weight:900}
+.reco-title{font-weight:900;margin-top:8px}.reco-desc{color:var(--muted);font-size:12px;line-height:1.55;margin-top:4px}
+.program-hero{background:linear-gradient(145deg,#EFF3FF,#FFFFFF 55%,#F8F3EA);padding:22px;border-radius:24px;border:1px solid #E8E7F0}
+.program-hero .big{font-size:27px;font-weight:950;letter-spacing:-1.3px;margin-top:8px}
+.week{margin-top:17px;display:grid;gap:9px}
+.week-item{display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:17px}
+.week-icon{width:35px;height:35px;border-radius:11px;background:#EEF4EF;display:grid;place-items:center;font-weight:900;color:#466956}
+.week-title{font-size:13px;font-weight:900}.week-desc{font-size:11px;color:var(--muted);margin-top:3px}
+.premium{background:linear-gradient(150deg,#2C2855,#6D59B9);color:#fff;padding:21px;border-radius:24px;box-shadow:var(--shadow)}
+.premium .badge{display:inline-block;background:rgba(255,255,255,.13);padding:6px 9px;border-radius:999px;font-size:10px;font-weight:900}
+.premium h2{font-size:22px;letter-spacing:-1px;margin:11px 0 7px}.premium p{font-size:12px;line-height:1.55;color:#E9E6FF;margin:0}
+.premium ul{padding-left:19px;margin:13px 0 0;color:#F6F3FF;font-size:12px;line-height:1.9}
+.profile-card{padding:20px;display:flex;gap:14px;align-items:center}.avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(145deg,#D4E8DA,#EBDCF8);display:grid;place-items:center;font-size:24px}
+.menu{display:grid;gap:2px;margin-top:13px}.menu-item{background:#fff;border:1px solid var(--line);padding:15px;border-radius:15px;display:flex;justify-content:space-between;align-items:center}
+.menu-left{font-size:13px;font-weight:800}.menu-right{color:#A0A6A2;font-size:12px}
+
+.community-hero{padding:20px;background:linear-gradient(145deg,#EEF4EF 0%,#FFFCF7 58%,#F1EEFF 100%);border:1px solid #E5EAE2}
+.community-hero h2{font-size:24px;line-height:1.36;letter-spacing:-1px;margin:9px 0 8px}
+.community-hero p{font-size:12px;line-height:1.6;color:var(--muted);margin:0;max-width:300px}
+.topic-chip{display:inline-flex;margin-top:13px;padding:7px 10px;border-radius:999px;background:#E6EEE8;color:#466454;font-size:11px;font-weight:900}
+.community-filter{display:flex;gap:7px;overflow:auto;padding-bottom:2px}
+.filter-chip{white-space:nowrap;border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:11px;font-weight:850;color:#7A827D}
+.filter-chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+.community-posts{display:grid;gap:11px}
+.community-post{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 10px 24px rgba(24,42,34,.045)}
+.post-head{display:flex;align-items:center;gap:9px}
+.avatar.small{width:34px;height:34px;font-size:15px}
+.avatar.small.purple{background:linear-gradient(145deg,#EAE3FF,#F5F1FF)}
+.avatar.small.orange{background:linear-gradient(145deg,#FFF0DE,#FFF9EF)}
+.post-user{font-size:12px;font-weight:900}
+.post-time{font-size:10px;color:var(--muted);margin-top:2px}
+.post-title{font-size:16px;font-weight:900;line-height:1.45;letter-spacing:-.3px;margin-top:13px}
+.post-body{font-size:12px;color:#626B65;line-height:1.65;margin-top:6px}
+.post-actions{display:flex;gap:14px;margin-top:13px;padding-top:11px;border-top:1px solid #F0F1EE}
+.post-actions button{border:0;background:none;color:#7A837D;font-size:11px;padding:0;cursor:pointer}
+.post-actions button.liked{color:#B15167}
+.modal{display:none;position:fixed;inset:0;background:rgba(20,28,24,.35);z-index:120;align-items:flex-end}
+.modal.show{display:flex}
+.modal-sheet{width:min(430px,100%);margin:0 auto;background:#fff;border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -20px 45px rgba(0,0,0,.12)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.composer-tabs{display:flex;gap:7px;margin-bottom:11px}
+.composer-tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 11px;font-size:11px;font-weight:850;color:#7A827D}
+.composer-tab.active{background:var(--green2);color:#3B6353;border-color:#CFE0D4}
+.text-input{width:100%;border:1px solid var(--line);border-radius:15px;padding:13px;font-family:inherit;font-size:13px;outline:none;background:#FBFCFA;margin-top:8px}
+.text-input.area{min-height:130px;resize:vertical;line-height:1.6}
+.composer-row{display:flex;align-items:center;justify-content:space-between;margin-top:11px}
+.mini-label{font-size:11px;color:var(--muted)}
+
+.settings-card{padding:4px 18px;overflow:hidden}
+.settings-section-title{font-size:12px;color:var(--muted);font-weight:900;padding:14px 0 4px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:16px 0;border-top:1px solid #EFF1EE;cursor:pointer}
+.setting-row:first-of-type{border-top:0}
+.setting-title{font-size:13px;font-weight:900}.setting-desc{font-size:11px;color:var(--muted);margin-top:4px}
+.setting-arrow{font-size:22px;color:#A0A6A2}
+.toggle{width:38px;height:22px;border-radius:99px;background:#DDE2DD;padding:3px;transition:.15s}
+.toggle span{display:block;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);transition:.15s}
+.toggle.on{background:#5B8A73}.toggle.on span{transform:translateX(16px)}
+.settings-premium{margin-bottom:4px}
+
+html{overscroll-behavior-y:none}
+body{-webkit-tap-highlight-color:transparent}
+button,input,textarea{-webkit-appearance:none;appearance:none}
+button{touch-action:manipulation}
+.screen{padding-left:16px;padding-right:16px}
+.nav button{min-height:48px}
+.icon-btn,.primary,.secondary,.option,.test-card,.week-item,.setting-row,.post-actions button{min-height:44px}
+.mobile-install-banner{display:none;position:fixed;left:12px;right:12px;bottom:78px;z-index:90;background:#244A3B;color:#fff;border-radius:17px;padding:12px;box-shadow:0 14px 28px rgba(0,0,0,.16)}
+.mobile-install-banner.show{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mobile-install-banner .txt{font-size:11px;line-height:1.45}
+.mobile-install-banner .txt b{font-size:12px}
+.install-btn{border:0;border-radius:11px;padding:10px 12px;background:#fff;color:#244A3B;font-weight:900;white-space:nowrap}
+.premium-modal{display:none;position:fixed;inset:0;background:rgba(18,25,22,.42);z-index:130;align-items:flex-end}
+.premium-modal.show{display:flex}
+.premium-sheet{width:min(430px,100%);margin:0 auto;background:#fff;border-radius:25px 25px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -20px 55px rgba(0,0,0,.16)}
+.premium-sheet h2{font-size:24px;letter-spacing:-1px;margin:9px 0 6px}
+.premium-sub{font-size:12px;line-height:1.6;color:var(--muted)}
+.premium-grid{display:grid;gap:9px;margin-top:14px}
+.premium-feature{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:15px}
+.premium-icon{width:30px;height:30px;border-radius:10px;background:#F0F3EE;display:grid;place-items:center;flex:0 0 auto}
+.premium-feature b{font-size:12px}.premium-feature span{display:block;font-size:11px;color:var(--muted);margin-top:2px;line-height:1.45}
+.price-toggle{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:15px}
+.price-option{border:1px solid var(--line);background:#fff;border-radius:13px;padding:11px;text-align:left}
+.price-option.active{border-color:#6556B4;background:#F3F0FF}
+.price-option b{display:block;font-size:13px}.price-option span{font-size:10px;color:var(--muted)}
+.home-pulse{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:11px;color:#65706A}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:#6FA388;box-shadow:0 0 0 5px rgba(111,163,136,.13)}
+.recap-card{padding:18px;background:linear-gradient(145deg,#F3F1FF,#fff)}
+.recap-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.recap-cell{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px}
+.recap-cell b{display:block;font-size:19px}.recap-cell span{font-size:10px;color:var(--muted)}
+@media (min-width: 700px){
+  .app{box-shadow:0 18px 60px rgba(20,30,25,.12);min-height:100vh}
+}
+.empty{padding:33px 20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
+.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:88px;background:#1F2924;color:#fff;padding:11px 14px;border-radius:12px;font-size:12px;opacity:0;pointer-events:none;transition:.25s;z-index:80}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:380px){
+  .hero h1{font-size:28px}.question-title{font-size:23px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="top-safe"></div>
+
+<!-- HOME -->
+<section id="home" class="screen active">
+  <div class="header">
+    <div class="wordmark">오늘의 나 발견</div>
+    <button class="icon-btn" onclick="toast('알림은 다음 버전에서 연결할 수 있어요.')">♧</button>
+  </div>
+
+  <div class="hero">
+    <div class="eyebrow">TODAY'S DISCOVERY</div>
+    <h1>안녕, 오늘은<br>어떤 나를 발견해볼까?</h1>
+    <p>답을 빨리 찾으려고 하지 않아도 괜찮아요.<br>작은 질문 하나에서 시작해요.</p>
+    <button class="primary" style="margin-top:18px" onclick="startQuiz()">오늘의 질문 시작하기 →</button>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div class="section-title">오늘의 질문</div><div class="small-link" onclick="startQuiz()">바로 시작</div></div>
+    <div class="card prompt-card">
+      <div class="prompt-label">QUESTION 01</div>
+      <div class="prompt-text">“시간과 돈 걱정이 없다면,<br>이번 달에 뭘 해보고 싶어?”</div>
+      <div class="prompt-foot"><span class="chip">생각 1분</span><span class="small-link">오늘의 발견에 기록</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div class="section-title">나의 진행 상황</div><div class="small-link" onclick="show('program')">전체 보기</div></div>
+    <div class="card progress-card">
+      <div class="progress-row"><span>30일 나를 발견하는 여정</span><b style="color:var(--green)">5 / 30일</b></div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:11px;font-size:11px;color:var(--muted)"><span>5일 연속 기록 중</span><span>다음 실험까지 2일</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="stat-row">
+      <div class="stat"><div class="k">발견한 나</div><div class="v">12</div></div>
+      <div class="stat"><div class="k">해본 실험</div><div class="v">4</div></div>
+      <div class="stat"><div class="k">기록 일수</div><div class="v">5</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head"><div class="section-title">이번 달의 나</div><div class="small-link" onclick="show('record')">자세히</div></div>
+    <div class="card recap-card">
+      <div class="eyebrow">MONTHLY RECAP</div>
+      <div style="font-size:17px;font-weight:900;margin-top:7px;line-height:1.4">이번 달의 나는<br><span style="color:#6556B4">새로운 걸 만들어보고 싶어했어요.</span></div>
+      <div class="recap-mini">
+        <div class="recap-cell"><b>4</b><span>해본 실험</span></div>
+        <div class="recap-cell"><b>12</b><span>새로운 발견</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-head"><div class="section-title">다음에 해볼 것</div></div>
+    <div class="card test-card" onclick="show('experience')">
+      <div><div class="test-title">새로운 장소에 가보기</div><div class="test-desc">익숙한 곳에서 벗어나면<br>내가 뭘 좋아하는지 더 잘 보일 수 있어요.</div></div>
+      <div class="mini-arrow">→</div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-head"><div class="section-title">사람들의 발견</div><div class="small-link" onclick="show('community')">커뮤니티 보기</div></div>
+    <div class="card test-card" onclick="show('community')">
+      <div><div class="test-title">“이번 주에 처음 해본 것 있어요?”</div><div class="test-desc">작은 시작을 공유하고<br>다른 사람의 경험도 만나보세요.</div></div>
+      <div class="mini-arrow">→</div>
+    </div>
+  </div>
+</section>
+
+<!-- DISCOVER -->
+<section id="discover" class="screen">
+  <div class="header"><div class="wordmark">발견</div><button class="icon-btn" onclick="startQuiz()">＋</button></div>
+  <div class="card" style="padding:18px;background:linear-gradient(145deg,#F0F5F1,#fff)">
+    <div class="eyebrow">MY DISCOVERY</div>
+    <h2 style="font-size:26px;line-height:1.3;margin:9px 0 9px">지금까지의 나를 보면<br><span style="color:var(--green)">이런 것</span>이 중요해 보여요.</h2>
+    <div class="tag-grid" style="margin-top:13px"><span class="tag">성장</span><span class="tag">경제적 여유</span><span class="tag">자유</span><span class="tag">새로운 경험</span></div>
+  </div>
+  <div class="section">
+    <div class="section-head"><div class="section-title">최근 발견</div><div class="small-link" onclick="show('record')">기록 보기</div></div>
+    <div class="timeline">
+      <div class="timeline-item"><div class="timeline-mark">01</div><div><div class="timeline-date">9월 12일</div><div class="timeline-text">“돈과 시간에 쫓기지 않는 삶을 만들고 싶다.”</div></div></div>
+      <div class="timeline-item"><div class="timeline-mark">02</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“새로운 걸 만들어서 사람들에게 써보게 하고 싶다.”</div></div></div>
+      <div class="timeline-item"><div class="timeline-mark">03</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 하는 사람으로 남고 싶다.”</div></div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="card prompt-card">
+      <div class="prompt-label">오늘의 탐색</div>
+      <div class="prompt-text">“내가 정말 궁금한 걸<br>한 가지 골라본다면?”</div>
+      <button class="primary" style="width:100%;margin-top:15px" onclick="startQuiz()">질문으로 찾아보기</button>
+    </div>
+  </div>
+</section>
+
+<!-- RECORD -->
+<section id="record" class="screen">
+  <div class="header"><div class="wordmark">나의 기록</div><button class="icon-btn" onclick="show('addrecord')">＋</button></div>
+  <div class="tag-grid" style="margin-bottom:13px"><span class="chip" style="background:var(--green);color:#fff">전체</span><span class="chip">질문</span><span class="chip">실험</span><span class="chip">성장</span></div>
+  <div class="timeline">
+    <div class="timeline-item"><div class="timeline-mark" style="background:#FFF0DE;color:#A06B2D">✓</div><div><div class="timeline-date">오늘</div><div class="timeline-text">오늘의 질문에 답했어요.<br>“내가 원하는 삶의 모습이 생각보다 선명하다.”</div></div></div>
+    <div class="timeline-item"><div class="timeline-mark" style="background:#EFEAFE;color:#6754B4">✦</div><div><div class="timeline-date">9월 12일 · 실험</div><div class="timeline-text">새로운 서비스 아이디어를 직접 만들어봤어요.<br>생각보다 만드는 게 재밌었어요.</div></div></div>
+    <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“내가 만든 것이 사람에게 도움이 되면 좋겠다.”</div></div></div>
+    <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 한 사람으로 남고 싶다.”</div></div></div>
+  </div>
+  <div class="section"><div class="card empty">기록이 쌓일수록<br>‘예전의 나’와 ‘지금의 나’를 비교할 수 있어요.</div></div>
+</section>
+
+<!-- PROGRAM -->
+<section id="program" class="screen">
+  <div class="header"><div class="wordmark">30일 프로그램</div><button class="icon-btn" onclick="toast('프로그램 알림 설정 준비 중이에요.')">♧</button></div>
+  <div class="program-hero">
+    <div class="eyebrow" style="color:#7476A8">30 DAYS</div>
+    <div class="big">나를 발견하는 여정</div>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6;margin:7px 0 0">매일 조금씩, 더 나다운 나를 만나보세요.</p>
+    <button class="primary" style="margin-top:15px;background:#6556B4" onclick="startQuiz()">오늘의 질문 시작하기</button>
+  </div>
+  <div class="week">
+    <div class="week-item"><div class="week-icon">1</div><div><div class="week-title">1주차 · 지금의 나 이해하기</div><div class="week-desc">내가 중요하게 생각하는 것 알아보기</div></div></div>
+    <div class="week-item"><div class="week-icon">2</div><div><div class="week-title">2주차 · 내가 좋아하는 것 발견하기</div><div class="week-desc">끌리는 순간과 반복되는 관심 찾기</div></div></div>
+    <div class="week-item"><div class="week-icon">3</div><div><div class="week-title">3주차 · 작은 실험 해보기</div><div class="week-desc">생각에서 행동으로 한 걸음</div></div></div>
+    <div class="week-item"><div class="week-icon">4</div><div><div class="week-title">4주차 · 나만의 방향 정리하기</div><div class="week-desc">한 달 동안 발견한 나를 정리하기</div></div></div>
+  </div>
+  <div class="section premium">
+    <span class="badge">PREMIUM</span>
+    <h2>더 깊이,<br>나를 발견하는 여정</h2>
+    <p>기록이 쌓일수록 더 정확한 나만의 리포트를 만들어드려요.</p>
+    <ul><li>무료보다 더 깊은 심층 질문 세트</li><li>나만의 실험 추천</li><li>나의 변화 분석</li><li>30일 / 월간 리포트</li></ul>
+    <button class="primary" style="width:100%;margin-top:14px;background:#fff;color:#5C4EAB" onclick="openPremium()">프리미엄 살펴보기</button>
+  </div>
+</section>
+
+<!-- MY -->
+<section id="my" class="screen">
+  <div class="header"><div class="wordmark">마이페이지</div><button class="icon-btn" onclick="show('settings')">⚙</button></div>
+  <div class="card profile-card">
+    <div class="avatar">◡</div>
+    <div><div style="font-size:11px;color:var(--muted)">오늘의 나 발견</div><div style="font-size:18px;font-weight:950;margin-top:3px">아직 이름을 정하지 않았어요.</div></div>
+  </div>
+  <div class="section"><div class="card" style="padding:18px">
+    <div class="eyebrow">MY KEYWORDS</div>
+    <div class="tag-grid" style="margin-top:12px"><span class="tag">성장</span><span class="tag">자유</span><span class="tag">경제적 여유</span><span class="tag">경험</span></div>
+  </div></div>
+  <div class="section menu">
+    <div class="menu-item" onclick="toast('내 정보')"><div class="menu-left">내 정보</div><div class="menu-right">›</div></div>
+    <div class="menu-item" onclick="show('program')"><div class="menu-left">구독 관리</div><div class="menu-right">›</div></div>
+    <div class="menu-item" onclick="show('record')"><div class="menu-left">저장된 콘텐츠</div><div class="menu-right">›</div></div>
+    <div class="menu-item" onclick="toast('의견 보내기')"><div class="menu-left">의견 보내기</div><div class="menu-right">›</div></div>
+  </div>
+  <div class="section"><div class="card empty">당신이 남긴 작은 선택들이<br>조금씩 ‘나’를 만들어갈 거예요.</div></div>
+</section>
+
+
+
+
+<!-- ADD RECORD -->
+<section id="addrecord" class="screen">
+  <div class="header">
+    <button class="icon-btn" onclick="show('record')">‹</button>
+    <div class="wordmark">새 기록</div>
+    <div style="width:40px"></div>
+  </div>
+
+  <div class="card" style="padding:20px;background:linear-gradient(145deg,#EEF4EF,#FFFDF8)">
+    <div class="eyebrow">MY LOG</div>
+    <h2 style="font-size:25px;line-height:1.35;margin:9px 0 6px">오늘의 나를<br>한 줄 남겨보세요.</h2>
+    <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0">
+      거창한 기록이 아니어도 괜찮아요. 작은 경험 하나도 충분해요.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="card" style="padding:18px">
+      <div class="prompt-label">TITLE</div>
+      <input id="newRecordTitle" class="text-input" placeholder="예: 혼자 새로운 카페에 가봤다">
+
+      <div style="height:12px"></div>
+      <div class="prompt-label">CATEGORY</div>
+      <div id="newRecordCategory" class="composer-tabs">
+        <button class="composer-tab active" data-category="오늘의 발견" type="button">오늘의 발견</button>
+        <button class="composer-tab" data-category="실험" type="button">실험</button>
+        <button class="composer-tab" data-category="성장" type="button">성장</button>
+        <button class="composer-tab" data-category="관계" type="button">관계</button>
+      </div>
+
+      <div class="prompt-label" style="margin-top:12px">NOTE</div>
+      <textarea id="newRecordNote" class="text-input area" placeholder="무슨 일이 있었는지, 어떤 생각이 들었는지 적어보세요."></textarea>
+
+      <div style="height:12px"></div>
+      <div class="prompt-label">TODAY'S FEELING</div>
+      <div id="newMoodOptions" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">
+        <button class="secondary new-mood-btn" data-mood="1" type="button">😐</button>
+        <button class="secondary new-mood-btn" data-mood="2" type="button">🙂</button>
+        <button class="secondary new-mood-btn" data-mood="3" type="button">😊</button>
+        <button class="secondary new-mood-btn" data-mood="4" type="button">😍</button>
+        <button class="secondary new-mood-btn" data-mood="5" type="button">🤩</button>
+      </div>
+
+      <div style="height:14px"></div>
+      <div class="prompt-label">PHOTO</div>
+      <label for="newRecordPhoto">
+        <div id="newRecordPhotoPreview" style="min-height:110px;border:1.5px dashed #CCD4CE;border-radius:16px;background:#FAFBF9;display:flex;align-items:center;justify-content:center;text-align:center;color:#7A847E;padding:15px;cursor:pointer">
+          <div><div style="font-size:28px">📷</div><div style="font-size:12px;font-weight:850;margin-top:4px">사진 추가</div></div>
+        </div>
+      </label>
+      <input id="newRecordPhoto" type="file" accept="image/*" capture="environment" style="display:none">
+
+      <button class="primary" style="width:100%;margin-top:17px" onclick="saveNewRecord()">기록 저장하기</button>
+    </div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" class="screen">
+  <div class="header">
+    <button class="icon-btn" onclick="show('my')">‹</button>
+    <div class="wordmark">설정</div>
+    <div style="width:40px"></div>
+  </div>
+
+  <div class="card settings-card">
+    <div class="settings-section-title">앱 설정</div>
+    <div class="setting-row" onclick="toast('알림 설정은 실제 앱 배포 단계에서 연결할 수 있어요.')">
+      <div><div class="setting-title">알림</div><div class="setting-desc">오늘의 질문과 실험 리마인드</div></div>
+      <div class="toggle on"><span></span></div>
+    </div>
+    <div class="setting-row" onclick="toast('테마 설정 준비 중이에요.')">
+      <div><div class="setting-title">화면 테마</div><div class="setting-desc">현재: 따뜻한 라이트</div></div>
+      <div class="setting-arrow">›</div>
+    </div>
+    <div class="setting-row" onclick="toast('언어는 한국어로 설정되어 있어요.')">
+      <div><div class="setting-title">언어</div><div class="setting-desc">한국어</div></div>
+      <div class="setting-arrow">›</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card settings-card">
+      <div class="settings-section-title">기록 & 개인정보</div>
+      <div class="setting-row" onclick="toast('기록은 현재 이 기기에서만 보관되는 프로토타입이에요.')">
+        <div><div class="setting-title">내 기록 관리</div><div class="setting-desc">저장된 기록 확인</div></div>
+        <div class="setting-arrow">›</div>
+      </div>
+      <div class="setting-row" onclick="toast('개인정보 처리방침 화면은 출시 전에 연결할 수 있어요.')">
+        <div><div class="setting-title">개인정보 처리방침</div><div class="setting-desc">서비스 이용과 데이터 안내</div></div>
+        <div class="setting-arrow">›</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="premium settings-premium">
+      <span class="badge">PREMIUM</span>
+      <h2>나를 더 깊이 발견하기</h2>
+      <p>질문 수를 늘리는 것만이 아니라, 시간이 쌓일수록 더 정확한 발견을 만들어보세요.</p>
+      <ul>
+        <li>추가 심층 질문 세트</li>
+        <li>30일 변화 리포트</li>
+        <li>개인 맞춤 실험 추천</li>
+        <li>월별 나의 변화 비교</li>
+      </ul>
+      <button class="primary" style="width:100%;margin-top:14px;background:#fff;color:#5C4EAB" onclick="openPremium()">프리미엄 보기</button>
+    </div>
+  </div>
+</section>
+
+<!-- COMMUNITY -->
+<section id="community" class="screen">
+  <div class="header">
+    <div>
+      <div class="eyebrow">TOGETHER</div>
+      <div class="wordmark" style="margin-top:2px">커뮤니티</div>
+    </div>
+    <button class="icon-btn" onclick="openComposer()">＋</button>
+  </div>
+
+  <div class="card community-hero">
+    <div class="eyebrow">TODAY'S TOPIC</div>
+    <h2>이번 주에 처음 해본 것,<br>하나만 이야기해볼까요?</h2>
+    <p>작은 시작을 공유하면 다른 사람의 시작도 조금 쉬워질 수 있어요.</p>
+    <div class="topic-chip">#이번주실험</div>
+  </div>
+
+  <div class="section">
+    <div class="community-filter">
+      <button class="filter-chip active">전체</button>
+      <button class="filter-chip">오늘의 발견</button>
+      <button class="filter-chip">실험</button>
+      <button class="filter-chip">고민</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="community-posts" id="communityPosts">
+      <article class="community-post">
+        <div class="post-head">
+          <div class="avatar small">🌱</div>
+          <div><div class="post-user">오늘도시작</div><div class="post-time">12분 전 · 실험</div></div>
+        </div>
+        <div class="post-title">혼자 새로운 카페에 가봤어요.</div>
+        <div class="post-body">생각보다 혼자 있는 시간이 편했고, 다음엔 혼자 영화도 보려고요. 작은 일인데 기분이 꽤 좋네요.</div>
+        <div class="post-actions"><button onclick="toggleLike(this)">♡ <span>18</span></button><button onclick="focusComment(this)">💬 <span>4</span></button><button onclick="toast('저장했어요.')">🔖</button></div>
+      </article>
+
+      <article class="community-post">
+        <div class="post-head">
+          <div class="avatar small purple">✦</div>
+          <div><div class="post-user">천천히걷기</div><div class="post-time">1시간 전 · 고민</div></div>
+        </div>
+        <div class="post-title">하고 싶은 건 많은데 뭘 먼저 해야 할지 모르겠어요.</div>
+        <div class="post-body">요즘 관심 가는 게 많아서 오히려 아무것도 못 하고 있어요. 여러분은 어떻게 하나씩 시작했나요?</div>
+        <div class="post-actions"><button onclick="toggleLike(this)">♡ <span>31</span></button><button onclick="focusComment(this)">💬 <span>12</span></button><button onclick="toast('저장했어요.')">🔖</button></div>
+      </article>
+
+      <article class="community-post">
+        <div class="post-head">
+          <div class="avatar small orange">☀</div>
+          <div><div class="post-user">작은도전</div><div class="post-time">어제 · 오늘의 발견</div></div>
+        </div>
+        <div class="post-title">“후회를 덜 하는 사람으로 남고 싶다.”</div>
+        <div class="post-body">그래서 이번 달엔 해보고 싶었던 것 세 개만 해보기로 했어요. 첫 번째는 여행!</div>
+        <div class="post-actions"><button onclick="toggleLike(this)">♡ <span>46</span></button><button onclick="focusComment(this)">💬 <span>9</span></button><button onclick="toast('저장했어요.')">🔖</button></div>
+      </article>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card empty">나의 실험 기록을 공유하면<br>비슷한 길을 걷는 사람과 연결될 수 있어요.</div>
+  </div>
+</section>
+
+<!-- COMMUNITY COMPOSER MODAL -->
+<div id="composer" class="modal">
+  <div class="modal-sheet">
+    <div class="modal-head"><div class="wordmark">새 글 쓰기</div><button class="icon-btn" onclick="closeComposer()">×</button></div>
+    <div class="composer-tabs">
+      <button class="composer-tab active" data-kind="발견">오늘의 발견</button>
+      <button class="composer-tab" data-kind="실험">실험</button>
+      <button class="composer-tab" data-kind="고민">고민</button>
+    </div>
+    <input id="composerTitle" class="text-input" placeholder="제목을 적어보세요">
+    <textarea id="composerBody" class="text-input area" placeholder="어떤 일이 있었는지 편하게 적어보세요."></textarea>
+    <div class="composer-row"><span class="mini-label">익명으로 공유돼요</span><button class="primary" onclick="publishPost()">게시하기</button></div>
+  </div>
+</div>
+
+<!-- EXPERIENCE -->
+<section id="experience" class="screen">
+  <div class="header">
+    <button class="icon-btn" onclick="show('home')">‹</button>
+    <div class="wordmark">오늘의 실험</div>
+    <div style="width:40px"></div>
+  </div>
+
+  <div class="card" style="padding:20px;background:linear-gradient(145deg,#F1F5F0,#FFFDF8)">
+    <div class="eyebrow">SMALL EXPERIMENT 01</div>
+    <h2 style="font-size:28px;line-height:1.3;letter-spacing:-1.1px;margin:9px 0 8px">새로운 장소에<br>가보기</h2>
+    <p style="font-size:13px;color:var(--muted);line-height:1.65;margin:0">
+      익숙한 곳을 잠깐 벗어나서, 내가 무엇에 끌리는지 관찰해보세요.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">오늘의 기록</div>
+      <div class="small-link">나만 볼 수 있어요</div>
+    </div>
+
+    <div class="card" style="padding:18px">
+      <div class="prompt-label">PHOTO</div>
+      <label for="photoInput" style="display:block;cursor:pointer">
+        <div id="photoPreview" style="
+          min-height:150px;border:1.5px dashed #CCD4CE;border-radius:17px;
+          background:#FAFBF9;display:flex;align-items:center;justify-content:center;
+          text-align:center;color:#7A847E;padding:20px;overflow:hidden">
+          <div>
+            <div style="font-size:30px;margin-bottom:7px">📷</div>
+            <div style="font-size:13px;font-weight:800;color:#56625B">사진 추가하기</div>
+            <div style="font-size:11px;margin-top:4px">오늘의 순간을 한 장 남겨보세요.</div>
+          </div>
+        </div>
+      </label>
+      <input id="photoInput" type="file" accept="image/*" capture="environment" style="display:none">
+
+      <div style="height:16px"></div>
+
+      <div class="prompt-label">NOTE</div>
+      <textarea id="experienceNote" placeholder="어디에 갔는지, 무엇이 좋았는지, 어떤 생각이 들었는지 적어보세요."
+        style="width:100%;min-height:125px;resize:vertical;border:1px solid var(--line);border-radius:15px;
+        padding:13px;font-family:inherit;font-size:13px;line-height:1.6;outline:none"></textarea>
+
+      <div style="height:16px"></div>
+
+      <div class="prompt-label">오늘의 느낌</div>
+      <div id="moodOptions" style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">
+        <button class="secondary mood-btn" data-mood="1" type="button">😐</button>
+        <button class="secondary mood-btn" data-mood="2" type="button">🙂</button>
+        <button class="secondary mood-btn" data-mood="3" type="button">😊</button>
+        <button class="secondary mood-btn" data-mood="4" type="button">😍</button>
+        <button class="secondary mood-btn" data-mood="5" type="button">🤩</button>
+      </div>
+
+      <button class="primary" style="width:100%;margin-top:18px" onclick="saveExperience()">기록 저장하기</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card empty">
+      <b style="display:block;color:var(--text);margin-bottom:6px">기록이 쌓이면 달라져요.</b>
+      사진과 생각, 느낌이 쌓일수록<br>
+      “내가 실제로 어떤 경험을 좋아하는지”를 앱이 함께 보여줄 수 있어요.
+    </div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz" class="screen">
+  <div class="question-wrap">
+    <div class="q-top"><button class="back" onclick="show('home')">‹</button><div class="q-progress"><div id="qFill"></div></div><div class="q-count" id="qCount">1 / 10</div></div>
+    <div class="eyebrow" id="qEyebrow">TODAY'S QUESTION</div>
+    <h1 class="question-title" id="qTitle"></h1>
+    <p class="question-sub">해당되는 것을 모두 선택해 주세요.</p>
+    <div class="option-list" id="qOptions"></div>
+    <div class="q-actions"><button class="secondary" id="qPrev" onclick="prevQuestion()">이전</button><button class="primary" onclick="nextQuestion()">다음</button></div>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section id="result" class="screen">
+  <div class="header"><div class="wordmark">나의 발견 결과</div><button class="icon-btn" onclick="show('home')">×</button></div>
+  <div class="result-hero">
+    <div class="result-orb">✦</div>
+    <h2 id="rTitle">내가 만든 삶을 키워가는 사람</h2>
+    <p id="rText">너는 새로운 경험과 성장 속에서 가능성을 발견하고, 직접 무언가를 만들어보면서 답을 찾는 편이에요.</p>
+  </div>
+  <div class="section"><div class="section-head"><div class="section-title">나의 주요 키워드</div></div><div class="tag-grid" id="rTags"></div></div>
+  <div class="section"><div class="section-head"><div class="section-title">나의 점수</div></div><div class="score-list" id="rScores"></div></div>
+  <div class="section"><div class="section-head"><div class="section-title">이번 주에 해볼 만한 것</div></div><div class="reco">
+    <div class="reco-item"><span class="reco-badge">실험 01</span><div class="reco-title">작은 무언가 하나 만들어보기</div><div class="reco-desc">완성도를 고민하기보다 1시간 안에 끝나는 결과물을 하나 만들어보세요.</div></div>
+    <div class="reco-item"><span class="reco-badge" style="background:#EEF4EF;color:#416852">실험 02</span><div class="reco-title">새로운 장소에서 혼자 30분 보내보기</div><div class="reco-desc">익숙하지 않은 환경에서 내가 무엇에 끌리는지 관찰해보세요.</div></div>
+  </div></div>
+  <button class="primary" style="width:100%;margin-top:17px" onclick="show('program')">30일 프로그램 이어가기</button>
+  <button class="secondary" style="width:100%;margin-top:9px" onclick="show('home')">홈으로 돌아가기</button>
+</section>
+
+<nav class="nav">
+  <button class="active" data-screen="home" onclick="show('home')"><span class="nav-dot">⌂</span>홈</button>
+  <button data-screen="discover" onclick="show('discover')"><span class="nav-dot">✦</span>발견</button>
+  <button data-screen="record" onclick="show('record')"><span class="nav-dot">▤</span>기록</button>
+  <button data-screen="community" onclick="show('community')"><span class="nav-dot">◌</span>커뮤니티</button>
+  <button data-screen="my" onclick="show('my')"><span class="nav-dot">◡</span>나</button>
+</nav>
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+const questions = [
+ {q:"시간과 돈 걱정이 없다면, 이번 달에 뭘 해보고 싶어?", opts:[["몸을 원하는 모습으로 만들어보기","q1_body","growth"],["돈을 버는 방법 직접 실험해보기","q1_money","money"],["새로운 곳이나 경험 찾아보기","q1_exp","freedom"],["책이나 콘텐츠에 깊게 빠져보기","q1_book","depth"]]},
+ {q:"누군가 너에게 이렇게 말한다면 가장 뿌듯한 건?", opts:[["“덕분에 나도 시작했어.”","q2_start","impact"],["“네가 만든 게 진짜 유용해.”","q2_useful","create"],["“너 때문에 내가 많이 성장했어.”","q2_growth","growth"],["“이제 내가 원하는 게 뭔지 알겠어.”","q2_find","impact"]]},
+ {q:"새로운 일을 시작할 때 어떤 두려움이 있어?", opts:[["실패할까 봐","q3_failure","courage"],["남들이 어떻게 볼까 봐","q3_judgment","courage"],["내가 잘할 자신이 없어서","q3_confidence","growth"],["뭐부터 해야 할지 몰라서","q3_where","create"],["시간이 부족할까 봐","q3_time","freedom"],["돈이 들까 봐","q3_cost","money"]]},
+ {q:"10년 뒤 ‘잘 살았다’고 느끼려면 무엇이 중요할까?", opts:[["경제적인 여유","q4_money","money"],["내 수준이 지금보다 많이 올라가 있는 것","q4_growth","growth"],["시간의 여유와 여행","q4_freedom","freedom"],["사랑하는 사람과 좋은 관계","q4_rel","connection"],["내가 하고 싶은 일을 하고 있는 것","q4_work","identity"]]},
+ {q:"다음 중 ‘한번은 진짜 해보고 싶다’에 가까운 건?", opts:[["내가 만든 것을 실제 사람에게 써보게 하기","q5_make","create"],["새로운 일을 작게라도 시작해보기","q5_start","courage"],["내 돈을 직접 굴려 수익을 만들어보기","q5_invest","money"],["내가 좋아하는 일을 깊게 파보기","q5_deep","depth"]]},
+ {q:"너에게 더 아쉬운 것은?", opts:[["해보지 않고 지나치는 것","q6_miss","courage"],["내 가능성을 충분히 써보지 못하는 것","q6_potential","growth"],["돈 때문에 선택지가 줄어드는 것","q6_money","money"],["좋은 경험과 사람을 놓치는 것","q6_people","connection"],["내가 뭘 원하는지 모른 채 사는 것","q6_direction","depth"]]},
+ {q:"내가 만든 것이 사람에게 어떤 변화를 줬으면 좋겠어?", opts:[["생각이 달라졌으면 좋겠다","q7_think","impact"],["실제로 행동하게 됐으면 좋겠다","q7_action","impact"],["삶이 더 편해졌으면 좋겠다","q7_ease","create"],["내가 할 수 있는 게 늘었으면 좋겠다","q7_ability","growth"]]},
+ {q:"지금의 너에게 가장 필요한 말은?", opts:[["“일단 한번 해봐.”","q8_try","courage"],["“네가 원하는 게 뭔지 찾아봐.”","q8_find","depth"],["“돈과 시간을 네 편으로 만들어.”","q8_money","money"],["“작게 만들어서 세상에 내놔봐.”","q8_ship","create"],["“천천히 해도 괜찮아.”","q8_slow","freedom"]]},
+ {q:"여행지에서 가장 끌리는 순간은?", opts:[["아무 일정 없이 여유롭게 걷는 시간","q9_walk","freedom"],["새로운 사람이나 문화를 만나는 순간","q9_people","connection"],["사진·영상을 찍고 기록으로 남기는 순간","q9_record","create"],["혼자 생각하면서 내가 뭘 원하는지 느끼는 순간","q9_think","depth"]]},
+ {q:"마지막 질문. 지금 네가 가장 알고 싶은 것은?", opts:[["나는 뭘 하면 돈을 잘 벌 수 있을까?","q10_money","money"],["나는 뭘 할 때 진짜 재밌을까?","q10_fun","depth"],["내가 직접 뭘 만들어볼 수 있을까?","q10_make","create"],["나는 어떤 사람으로 남고 싶을까?","q10_identity","identity"],["나는 어떤 삶을 원하는 걸까?","q10_life","identity"]]}
+];
+const labels={money:"경제적 여유",growth:"성장",freedom:"자유·경험",create:"만들기",impact:"영향",courage:"시작의 용기",depth:"깊이·탐색",connection:"관계",identity:"나답게 살기"};
+const titles={money:"선택지를 넓히는 사람",growth:"계속 성장하며 답을 찾는 사람",freedom:"경험으로 삶을 넓히는 사람",create:"내 손으로 무언가를 만드는 사람",impact:"사람에게 좋은 변화를 주는 사람",courage:"일단 시작하면서 답을 찾는 사람",depth:"깊이 파고들며 나를 발견하는 사람",connection:"사람과 관계 속에서 의미를 찾는 사람",identity:"내 방식의 삶을 만들어가는 사람"};
+let qi=0, answers=questions.map(()=>[]);
+function startQuiz(){ qi=0; answers=questions.map(()=>[]); show('quiz'); renderQuestion(); }
+function renderQuestion(){
+  const q=questions[qi];
+  document.getElementById('qCount').textContent=`${qi+1} / ${questions.length}`;
+  document.getElementById('qFill').style.width=((qi)/questions.length*100)+'%';
+  document.getElementById('qTitle').textContent=q.q;
+  const opts=document.getElementById('qOptions'); opts.innerHTML='';
+  q.opts.forEach(([text,id,key])=>{
+    const selected=answers[qi].some(x=>x.id===id);
+    const b=document.createElement('button'); b.className='option'+(selected?' selected':'');
+    b.innerHTML=`<span class="check">${selected?'✓':''}</span><span class="option-text">${text}</span>`;
+    b.onclick=()=>{ const idx=answers[qi].findIndex(x=>x.id===id); if(idx>=0) answers[qi].splice(idx,1); else answers[qi].push({id,key}); renderQuestion(); };
+    opts.appendChild(b);
+  });
+  document.getElementById('qPrev').style.visibility=qi===0?'hidden':'visible';
+}
+function prevQuestion(){ if(qi>0){qi--;renderQuestion();} }
+function nextQuestion(){ if(!answers[qi].length){toast('하나 이상 선택해 주세요.');return;} if(qi<questions.length-1){qi++;renderQuestion();} else showResult(); }
+function showResult(){
+  const counts={}; answers.flat().forEach(x=>counts[x.key]=(counts[x.key]||0)+1);
+  const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const primary=top[0]?.[0]||'identity';
+  let text='지금은 하나의 직업으로 결론내리기보다, 작은 경험을 통해 내가 무엇에 끌리는지 확인해보는 게 좋아 보여요.';
+  if(primary==='create' || (top[1]&&top[1][0]==='money')){
+    text='너는 생각만 하는 것보다 직접 무언가를 만들어보고, 그것이 사람에게 닿는 과정을 경험할 때 에너지가 올라갈 가능성이 있어요.';
+  } else if(primary==='impact'){ text='너는 나만의 성취뿐 아니라 다른 사람에게 좋은 변화를 만들어내는 경험에서도 의미를 크게 느낄 가능성이 있어요.'; }
+  else if(primary==='growth'){ text='너는 지금보다 더 나은 내가 되는 과정 자체를 중요하게 생각하는 편이에요. 작은 성취를 쌓을수록 다음 방향이 선명해질 수 있어요.'; }
+  else if(primary==='money'){ text='너는 경제적 여유를 단순한 소비가 아니라 선택의 자유와 연결해서 보는 경향이 있어요. 돈을 만드는 능력을 직접 실험해보는 게 잘 맞을 수 있어요.'; }
+  else if(primary==='freedom'){ text='너는 새로운 장소와 경험, 시간의 여유 속에서 나를 발견하는 쪽에 끌리는 편이에요. 경험의 폭을 넓혀보세요.'; }
+  else if(primary==='depth'){ text='너는 빠른 정답보다 깊이 생각하면서 스스로 답을 찾는 과정에 더 잘 반응하는 편이에요.'; }
+
+  document.getElementById('rTitle').textContent=titles[primary];
+  document.getElementById('rText').textContent=text;
+  const tags=document.getElementById('rTags'); tags.innerHTML=top.slice(0,4).map(([k])=>`<span class="tag">${labels[k]||k}</span>`).join('');
+  const scores=document.getElementById('rScores');
+  const max=Math.max(1,...top.map(x=>x[1]));
+  scores.innerHTML=top.slice(0,5).map(([k,v])=>`<div class="score-line"><div class="score-line-top"><span>${labels[k]||k}</span><span>${v}</span></div><div class="score-track"><div class="score-fill" style="width:${Math.max(10,v/max*100)}%"></div></div></div>`).join('');
+  show('result');
+}
+
+let selectedMood = null;
+
+document.addEventListener('click', (e)=>{
+  const mood = e.target.closest('.mood-btn');
+  if(!mood) return;
+  selectedMood = mood.dataset.mood;
+  document.querySelectorAll('.mood-btn').forEach(b=>{
+    b.style.background = b===mood ? 'var(--green)' : '#fff';
+    b.style.color = b===mood ? '#fff' : 'var(--text)';
+    b.style.borderColor = b===mood ? 'var(--green)' : 'var(--line)';
+  });
+});
+
+document.getElementById('photoInput').addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    document.getElementById('photoPreview').innerHTML =
+      `<img src="${reader.result}" alt="오늘의 기록 사진"
+       style="width:100%;height:210px;object-fit:cover;border-radius:14px;display:block">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+function saveExperience(){
+  const note = document.getElementById('experienceNote').value.trim();
+  const photoFile = document.getElementById('photoInput').files[0];
+
+  if(!note && !photoFile && !selectedMood){
+    toast('사진, 기록, 느낌 중 하나는 남겨주세요.');
+    return;
+  }
+
+  const record = {
+    title:'새로운 장소에 가보기',
+    date:new Date().toLocaleDateString('ko-KR'),
+    note,
+    mood:selectedMood || '',
+    hasPhoto:!!photoFile
+  };
+  localStorage.setItem('todayDiscoveryLatestExperience', JSON.stringify(record));
+
+  // Make the experience visible in the record screen.
+  const recordList = document.querySelector('#record .timeline');
+  if(recordList){
+    const moodText = selectedMood ? ['😐','🙂','😊','😍','🤩'][Number(selectedMood)-1] : '✦';
+    const photoText = photoFile ? ' · 사진 첨부' : '';
+    const newItem = document.createElement('div');
+    newItem.className = 'timeline-item';
+    newItem.innerHTML =
+      `<div class="timeline-mark" style="background:#EEF4EF;color:#416852">${moodText}</div>
+       <div>
+         <div class="timeline-date">방금 전 · 실험 기록</div>
+         <div class="timeline-text">새로운 장소에 가보기${photoText}<br>${escapeHTML(note || '오늘의 느낌을 기록했어요.')}</div>
+       </div>`;
+    recordList.prepend(newItem);
+  }
+
+  document.getElementById('experienceNote').value='';
+  document.getElementById('photoInput').value='';
+  document.getElementById('photoPreview').innerHTML =
+    `<div>
+      <div style="font-size:30px;margin-bottom:7px">📷</div>
+      <div style="font-size:13px;font-weight:800;color:#56625B">사진 추가하기</div>
+      <div style="font-size:11px;margin-top:4px">오늘의 순간을 한 장 남겨보세요.</div>
+    </div>`;
+  selectedMood=null;
+  document.querySelectorAll('.mood-btn').forEach(b=>{
+    b.style.background='#fff'; b.style.color='var(--text)'; b.style.borderColor='var(--line)';
+  });
+
+  toast('오늘의 실험 기록을 저장했어요.');
+  setTimeout(()=>show('record'), 650);
+}
+
+function escapeHTML(value){
+  return value.replace(/[&<>"']/g, s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[s]));
+}
+
+
+function openComposer(){ document.getElementById('composer').classList.add('show'); }
+function closeComposer(){ document.getElementById('composer').classList.remove('show'); }
+document.querySelectorAll('.composer-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.composer-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+function publishPost(){
+  const title=document.getElementById('composerTitle').value.trim();
+  const body=document.getElementById('composerBody').value.trim();
+  if(!title || !body){toast('제목과 내용을 적어주세요.');return;}
+  const kind=document.querySelector('.composer-tab.active')?.dataset.kind || '발견';
+  const post=document.createElement('article');
+  post.className='community-post';
+  post.innerHTML=`
+    <div class="post-head">
+      <div class="avatar small">◡</div>
+      <div><div class="post-user">나</div><div class="post-time">방금 전 · ${kind}</div></div>
+    </div>
+    <div class="post-title">${escapeHTML(title)}</div>
+    <div class="post-body">${escapeHTML(body)}</div>
+    <div class="post-actions"><button onclick="toggleLike(this)">♡ <span>0</span></button><button onclick="focusComment(this)">💬 <span>0</span></button><button onclick="toast('저장했어요.')">🔖</button></div>`;
+  document.getElementById('communityPosts').prepend(post);
+  document.getElementById('composerTitle').value='';
+  document.getElementById('composerBody').value='';
+  closeComposer();
+  toast('커뮤니티에 게시했어요.');
+}
+function toggleLike(btn){
+  btn.classList.toggle('liked');
+  const s=btn.querySelector('span');
+  let n=parseInt(s.textContent,10)||0;
+  s.textContent=btn.classList.contains('liked')?n+1:Math.max(0,n-1);
+}
+function focusComment(btn){ toast('댓글 영역은 다음 데이터 연결 단계에서 열 수 있어요.'); }
+
+
+let newRecordMood=null;
+let newRecordCategory='오늘의 발견';
+
+document.querySelectorAll('#newRecordCategory .composer-tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    newRecordCategory=btn.dataset.category;
+    document.querySelectorAll('#newRecordCategory .composer-tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+document.querySelectorAll('.new-mood-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    newRecordMood=btn.dataset.mood;
+    document.querySelectorAll('.new-mood-btn').forEach(b=>{
+      b.style.background=b===btn?'var(--green)':'#fff';
+      b.style.color=b===btn?'#fff':'var(--text)';
+      b.style.borderColor=b===btn?'var(--green)':'var(--line)';
+    });
+  });
+});
+
+document.getElementById('newRecordPhoto').addEventListener('change',(e)=>{
+  const file=e.target.files?.[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    document.getElementById('newRecordPhotoPreview').innerHTML=`<img src="${reader.result}" alt="새 기록 사진" style="width:100%;height:180px;object-fit:cover;border-radius:14px;display:block">`;
+  };
+  reader.readAsDataURL(file);
+});
+
+function saveNewRecord(){
+  const title=document.getElementById('newRecordTitle').value.trim();
+  const note=document.getElementById('newRecordNote').value.trim();
+  const photo=document.getElementById('newRecordPhoto').files?.[0];
+  if(!title && !note && !photo){toast('제목, 내용, 사진 중 하나는 남겨주세요.');return;}
+  const record={
+    title:title || '나의 새로운 기록',
+    category:newRecordCategory,
+    note:note || '사진으로 남긴 오늘의 기록',
+    mood:newRecordMood || '',
+    hasPhoto:!!photo,
+    date:new Date().toLocaleDateString('ko-KR')
+  };
+  const saved=JSON.parse(localStorage.getItem('todayDiscoveryRecords')||'[]');
+  saved.unshift(record);
+  localStorage.setItem('todayDiscoveryRecords',JSON.stringify(saved));
+
+  const list=document.querySelector('#record .timeline');
+  if(list){
+    const mark=newRecordMood ? ['😐','🙂','😊','😍','🤩'][Number(newRecordMood)-1] : '✦';
+    const photoText=photo?' · 사진 첨부':'';
+    const item=document.createElement('div');
+    item.className='timeline-item';
+    item.innerHTML=`<div class="timeline-mark" style="background:#EEF4EF;color:#416852">${mark}</div>
+      <div><div class="timeline-date">방금 전 · ${escapeHTML(newRecordCategory)}</div>
+      <div class="timeline-text">${escapeHTML(record.title)}${photoText}<br>${escapeHTML(record.note)}</div></div>`;
+    list.prepend(item);
+  }
+
+  document.getElementById('newRecordTitle').value='';
+  document.getElementById('newRecordNote').value='';
+  document.getElementById('newRecordPhoto').value='';
+  document.getElementById('newRecordPhotoPreview').innerHTML='<div><div style="font-size:28px">📷</div><div style="font-size:12px;font-weight:850;margin-top:4px">사진 추가</div></div>';
+  newRecordMood=null;
+  document.querySelectorAll('.new-mood-btn').forEach(b=>{b.style.background='#fff';b.style.color='var(--text)';b.style.borderColor='var(--line)'});
+  toast('새 기록을 저장했어요.');
+  setTimeout(()=>show('record'),500);
+}
+
+
+let deferredInstallPrompt = null;
+
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  deferredInstallPrompt=e;
+  setTimeout(()=>{
+    const banner=document.getElementById('installBanner');
+    if(banner) banner.classList.add('show');
+  },900);
+});
+
+function triggerInstall(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.finally(()=>{
+      deferredInstallPrompt=null;
+      document.getElementById('installBanner')?.classList.remove('show');
+    });
+  }else{
+    toast('브라우저 메뉴에서 “홈 화면에 추가”를 선택해 주세요.');
+  }
+}
+function openPremium(){ document.getElementById('premiumModal').classList.add('show'); }
+function closePremium(){ document.getElementById('premiumModal').classList.remove('show'); }
+function choosePlan(btn){
+  document.querySelectorAll('.price-option').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function haptic(){
+  try{navigator.vibrate?.(8);}catch(e){}
+}
+document.addEventListener('click',(e)=>{
+  if(e.target.closest('button,.option,.test-card,.week-item,.setting-row')) haptic();
+});
+window.addEventListener('pageshow',()=>{
+  const saved=JSON.parse(localStorage.getItem('todayDiscoveryRecords')||'[]');
+  if(saved.length){
+    const stat=document.querySelector('.stat-row .stat:nth-child(2) .v');
+    if(stat) stat.textContent=saved.length + 4;
+  }
+});
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id); if(el) el.classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.screen===id));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+let toastTimer; function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
