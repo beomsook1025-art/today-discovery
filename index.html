@@ -4,30 +4,21 @@
 <meta charset="utf-8">
 
 <meta name="theme-color" content="#244A3B">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-document.addEventListener("keydown",(e)=>{if(e.key==="Escape") closeAuth();});
-document.addEventListener("click",(e)=>{
-  const modal=document.getElementById("authModal");
-  if(modal && e.target===modal) closeAuth();
 });
-
-document.addEventListener("click",(e)=>{
-  const btn=e.target.closest("#accountButton");
-  if(btn){
+if(modal && e.target===modal) closeAuth();
+});
+if(btn){
     e.preventDefault();
     e.stopPropagation();
     openAuth();
   }
 }, true);
-
-document.addEventListener("DOMContentLoaded",()=>{
-  const modal=document.getElementById("authModal");
-  document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
+document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
   document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
   document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
   document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
   modal?.addEventListener("click",(e)=>{if(e.target===modal)closeAuth();});
-  document.addEventListener("keydown",(e)=>{if(e.key==="Escape")closeAuth();});
+});
   updateAccountUI();
 });
 </script>
@@ -38,7 +29,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v24</title>
+<title>오늘의 나 발견 · v26</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -292,7 +283,9 @@ button{touch-action:manipulation}
   .hero h1{font-size:28px}.question-title{font-size:23px}
 }
 </style>
-</head>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+</head></head>
 <body>
 <div class="app">
 <div class="top-safe"></div>
@@ -1330,6 +1323,21 @@ document.addEventListener("DOMContentLoaded",()=>{
   document.getElementById("authModal")?.addEventListener("click",e=>{if(e.target.id==="authModal")closeAuth();});
   if(typeof updateAccountUI==="function") updateAccountUI();
 });
+
+(function bindAuthUI(){
+  function bind(){
+    const modal=document.getElementById("authModal");
+    document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
+    document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
+    document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
+    document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
+    modal?.addEventListener("click",(e)=>{if(e.target===modal)closeAuth();});
+    document.addEventListener("keydown",(e)=>{if(e.key==="Escape")closeAuth();});
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
+  else bind();
+})();
+
 </script>
 
 <div id="authModal" class="premium-modal" aria-hidden="true">
