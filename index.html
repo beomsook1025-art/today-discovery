@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 
 <meta name="theme-color" content="#244A3B">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('supabase-ready'))"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -12,7 +12,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v15</title>
+<title>오늘의 나 발견 · v177</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -1051,59 +1051,85 @@ window.addEventListener('pageshow',()=>{
 
 
 
+
 const SUPABASE_URL = "https://peqeaxumtiiflkstsnln.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ofqvZyCsYYbXUaCZIz5hGA_dxUS82G4";
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+let supabaseClient = null;
 let currentUser = null;
 let authMode = "login";
 let notificationsEnabled = localStorage.getItem("todayDiscoveryNotifications") === "true";
 let pushSubscription = null;
 
-// VAPID 공개키 — 실제 Web Push 구독 생성에 사용
-const NOTIFICATION_PUBLIC_VAPID_KEY = "BOPrCPkP4nGxnRJ4H-ZwvTemrun7VOTwmd6o85oGzBVmPzYa3uwYiz6ofcyTMlQORFMBXaQm9AH4zcRFBPfY57I";
-
-function openAuth(mode="login"){ authMode=mode; updateAuthModeUI(); document.getElementById("authModal").classList.add("show"); }
-function closeAuth(){ document.getElementById("authModal").classList.remove("show"); }
-function toggleAuthMode(){ authMode=authMode==="login"?"signup":"login"; updateAuthModeUI(); }
-function updateAuthModeUI(){
-  document.getElementById("authTitle").textContent=authMode==="login"?"로그인":"회원가입";
-  document.getElementById("authSubmit").textContent=authMode==="login"?"로그인":"회원가입";
-  document.querySelector("#authModal .secondary").textContent=authMode==="login"?"회원가입으로 바꾸기":"로그인으로 바꾸기";
-  document.getElementById("authMessage").textContent="";
+function getSupabaseClient(){
+  if(supabaseClient) return supabaseClient;
+  if(!window.supabase || !window.supabase.createClient) return null;
+  supabaseClient = window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  return supabaseClient;
 }
-async function submitAuth(){
-  const email=document.getElementById("authEmail").value.trim();
-  const password=document.getElementById("authPassword").value;
+
+function openAuth(mode="login"){
+  authMode=mode;
+  updateAuthModeUI();
+  const modal=document.getElementById("authModal");
+  if(modal) modal.classList.add("show");
+}
+function closeAuth(){
+  const modal=document.getElementById("authModal");
+  if(modal) modal.classList.remove("show");
+}
+function toggleAuthMode(){authMode=authMode==="login"?"signup":"login";updateAuthModeUI();}
+function updateAuthModeUI(){
+  const title=document.getElementById("authTitle");
+  const submit=document.getElementById("authSubmit");
+  const switchBtn=document.querySelector("#authModal .secondary");
   const msg=document.getElementById("authMessage");
-  if(!email||!password){msg.textContent="이메일과 비밀번호를 입력해 주세요.";return;}
-  msg.textContent="처리 중…";
+  if(title) title.textContent=authMode==="login"?"로그인":"회원가입";
+  if(submit) submit.textContent=authMode==="login"?"로그인":"회원가입";
+  if(switchBtn) switchBtn.textContent=authMode==="login"?"회원가입으로 바꾸기":"로그인으로 바꾸기";
+  if(msg) msg.textContent="";
+}
+
+async function submitAuth(){
+  const client=getSupabaseClient();
+  const email=document.getElementById("authEmail")?.value.trim();
+  const password=document.getElementById("authPassword")?.value || "";
+  const msg=document.getElementById("authMessage");
+  if(!email||!password){if(msg)msg.textContent="이메일과 비밀번호를 입력해 주세요.";return;}
+  if(!client){if(msg)msg.textContent="인증 서버를 불러오는 중이에요. 잠시 후 다시 시도해 주세요.";return;}
+  if(msg) msg.textContent="처리 중…";
   try{
     const r=authMode==="login"
-      ? await supabaseClient.auth.signInWithPassword({email,password})
-      : await supabaseClient.auth.signUp({email,password});
+      ? await client.auth.signInWithPassword({email,password})
+      : await client.auth.signUp({email,password});
     if(r.error) throw r.error;
     if(authMode==="signup" && !r.data.session){
-      msg.textContent="회원가입 완료. 이메일 인증이 필요할 수 있어요.";
+      if(msg)msg.textContent="회원가입 완료. 이메일 인증이 필요할 수 있어요.";
       return;
     }
     currentUser=r.data.user;
     closeAuth();
     await refreshAccountUI();
-    await loadSavedPushState();
+    if(typeof loadSavedPushState==="function") await loadSavedPushState();
     toast(authMode==="login"?"로그인했어요.":"회원가입됐어요.");
-  }catch(e){ msg.textContent=e.message||"처리하지 못했어요."; }
+  }catch(e){
+    if(msg)msg.textContent=e.message||"로그인 처리 중 문제가 생겼어요.";
+  }
 }
+
 async function logout(){
-  await supabaseClient.auth.signOut();
+  const client=getSupabaseClient();
+  if(client) await client.auth.signOut();
   currentUser=null;
   pushSubscription=null;
   await refreshAccountUI();
-  updatePushStatus("로그아웃 상태에서는 알림 구독정보를 저장할 수 없어요.",false);
+  if(typeof updatePushStatus==="function") updatePushStatus("로그아웃 상태에서는 알림 구독정보를 저장할 수 없어요.",false);
   toast("로그아웃했어요.");
 }
+
 async function refreshAccountUI(){
-  const text=document.getElementById("accountText"), btn=document.getElementById("accountButton");
+  const text=document.getElementById("accountText");
+  const btn=document.getElementById("accountButton");
   if(!text||!btn)return;
   if(currentUser){
     text.textContent=currentUser.email||"로그인됨";
@@ -1122,106 +1148,33 @@ function urlBase64ToUint8Array(base64String){
   const rawData=atob(base64);
   return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0)));
 }
-function updatePushStatus(text,ok){
-  const el=document.getElementById("pushStatus");
-  if(!el)return;
-  el.textContent=text;
-  el.classList.toggle("ok",!!ok);
-}
-function updateNotificationUI(){
-  const t=document.getElementById("notificationToggle");
-  const d=document.getElementById("notificationDesc");
-  if(t)t.classList.toggle("on",notificationsEnabled);
-  if(d)d.textContent=notificationsEnabled?"알림 켜짐 · 구독정보 저장됨":"알림 꺼짐";
-}
-async function savePushSubscriptionToSupabase(subscription){
-  if(!currentUser) return {ok:false,reason:"not-authenticated"};
-  const json=subscription.toJSON?subscription.toJSON():subscription;
-  const endpoint=json.endpoint||"";
-  if(!endpoint)return {ok:false,reason:"no-endpoint"};
-  const {error}=await supabaseClient.from("push_subscriptions").upsert({
-    user_id:currentUser.id,
-    endpoint,
-    p256dh:json.keys?.p256dh||null,
-    auth:json.keys?.auth||null,
-    user_agent:navigator.userAgent
-  },{onConflict:"endpoint"});
-  return error?{ok:false,reason:error.message}:{ok:true};
-}
-async function removePushSubscriptionFromSupabase(subscription){
-  if(!currentUser||!subscription?.endpoint)return {ok:false};
-  const {error}=await supabaseClient.from("push_subscriptions").delete()
-    .eq("user_id",currentUser.id).eq("endpoint",subscription.endpoint);
-  return error?{ok:false,reason:error.message}:{ok:true};
-}
-async function loadSavedPushState(){
-  updateNotificationUI();
-  if(!currentUser){updatePushStatus("로그인하면 이 기기의 알림 구독정보를 계정에 저장할 수 있어요.",false);return;}
-  try{
-    const {data,error}=await supabaseClient.from("push_subscriptions")
-      .select("id,endpoint,created_at,updated_at")
-      .eq("user_id",currentUser.id).order("updated_at",{ascending:false}).limit(5);
-    if(error){updatePushStatus("구독 테이블을 읽지 못했어요. SQL 설정을 확인해 주세요.",false);return;}
-    if(data?.length){
-      updatePushStatus("이 계정에 저장된 알림 구독정보가 있어요.",true);
-    }else{
-      updatePushStatus("아직 이 계정에 저장된 알림 구독정보가 없어요.",false);
-    }
-  }catch(e){
-    updatePushStatus("알림 구독 상태를 확인하지 못했어요.",false);
-  }
-}
-async function registerPushSubscription(){
-  if(!("serviceWorker" in navigator)||!("PushManager" in window))return {ok:false,reason:"push-unsupported"};
-  if(!("Notification" in window))return {ok:false,reason:"notification-unsupported"};
-  if(Notification.permission!=="granted")return {ok:false,reason:"permission"};
-  const reg=await navigator.serviceWorker.ready;
-  let sub=await reg.pushManager.getSubscription();
-  if(!sub){
-    sub=await reg.pushManager.subscribe({
-      userVisibleOnly:true,
-      applicationServerKey:urlBase64ToUint8Array(NOTIFICATION_PUBLIC_VAPID_KEY)
-    });
-  }
-  pushSubscription=sub;
-  const saved=await savePushSubscriptionToSupabase(sub);
-  return saved.ok?{ok:true,subscription:sub}:{ok:false,reason:"supabase",detail:saved.reason};
-}
-async function toggleNotifications(){
-  const next=!notificationsEnabled;
-  if(next){
-    if(!currentUser){openAuth();toast("먼저 로그인해 주세요.");return;}
-    if(!("Notification" in window)){toast("이 브라우저에서는 알림을 지원하지 않아요.");return;}
-    const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
-    if(permission!=="granted"){toast("알림 권한이 허용되지 않았어요.");return;}
+
+
+(function loadSupabaseSafely(){
+  function ready(){
     try{
-      const r=await registerPushSubscription();
-      if(!r.ok){updatePushStatus("알림 구독 저장 실패: "+(r.detail||r.reason),false);toast("구독정보 저장에 실패했어요.");return;}
-      notificationsEnabled=true;
-      localStorage.setItem("todayDiscoveryNotifications","true");
-      updateNotificationUI();
-      updatePushStatus("이 기기의 알림 구독정보가 Supabase에 저장됐어요.",true);
-      toast("알림 연결 완료!");
-    }catch(e){updatePushStatus("알림 연결 실패: "+e.message,false);toast("알림 연결에 실패했어요.");}
-  }else{
-    if(pushSubscription){
-      await removePushSubscriptionFromSupabase(pushSubscription);
-      try{await pushSubscription.unsubscribe();}catch(e){}
+      const client=getSupabaseClient();
+      if(client){
+        client.auth.getUser().then(({data})=>{
+          currentUser=data?.user||null;
+          refreshAccountUI();
+          if(currentUser && typeof loadSavedPushState==="function") loadSavedPushState();
+        }).catch(()=>refreshAccountUI());
+        client.auth.onAuthStateChange((_event,session)=>{
+          currentUser=session?.user||null;
+          refreshAccountUI();
+          if(currentUser && typeof loadSavedPushState==="function") loadSavedPushState();
+        });
+      }else{
+        refreshAccountUI();
+      }
+    }catch(e){
+      refreshAccountUI();
     }
-    notificationsEnabled=false;
-    localStorage.setItem("todayDiscoveryNotifications","false");
-    updateNotificationUI();
-    updatePushStatus("알림이 꺼졌어요.",false);
-    toast("알림을 껐어요.");
   }
-}
-
-supabaseClient.auth.onAuthStateChange((_event,session)=>{
-  currentUser=session?.user||null;
-  refreshAccountUI();
-  if(currentUser) loadSavedPushState();
-});
-
+  if(window.supabase) ready();
+  else window.addEventListener("supabase-ready",ready,{once:true});
+})();
 const appHistory = ['home'];
 let historyBusy = false;
 
