@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 
 <meta name="theme-color" content="#244A3B">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('supabase-ready'))"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4" onload="window.dispatchEvent(new Event('supabase-ready'))">
+document.addEventListener("keydown",(e)=>{if(e.key==="Escape") closeAuth();});
+document.addEventListener("click",(e)=>{
+  const modal=document.getElementById("authModal");
+  if(modal && e.target===modal) closeAuth();
+});
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -12,7 +18,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v177</title>
+<title>오늘의 나 발견 · v18</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -1072,11 +1078,16 @@ function openAuth(mode="login"){
   authMode=mode;
   updateAuthModeUI();
   const modal=document.getElementById("authModal");
-  if(modal) modal.classList.add("show");
+  if(!modal){console.error("authModal missing");return;}
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden","false");
+  setTimeout(()=>document.getElementById("authEmail")?.focus(),50);
 }
 function closeAuth(){
   const modal=document.getElementById("authModal");
-  if(modal) modal.classList.remove("show");
+  if(!modal)return;
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden","true");
 }
 function toggleAuthMode(){authMode=authMode==="login"?"signup":"login";updateAuthModeUI();}
 function updateAuthModeUI(){
