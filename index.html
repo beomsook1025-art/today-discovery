@@ -18,7 +18,7 @@ document.addEventListener("click",(e)=>{
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v18</title>
+<title>오늘의 나 발견 · v19</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -250,6 +250,16 @@ button{touch-action:manipulation}
 
 .push-status{padding:10px 12px;background:#F7F8F6;border:1px solid #E7EBE6;border-radius:13px;color:#69736D;font-size:11px;line-height:1.5}
 .push-status.ok{background:#EEF5EF;border-color:#D9E7DC;color:#416852}
+
+.auth-busy{opacity:.65;pointer-events:none}
+.auth-spinner{
+  width:14px;height:14px;border:2px solid #D9E5DE;border-top-color:#244A3B;
+  border-radius:50%;display:inline-block;vertical-align:-2px;margin-right:6px;
+  animation:authspin .7s linear infinite
+}
+@keyframes authspin{to{transform:rotate(360deg)}}
+.auth-error{color:#9B4B59;background:#FFF3F4;border:1px solid #F1D5DA;padding:10px 11px;border-radius:12px}
+.auth-ok{color:#416852;background:#EEF5EF;border:1px solid #D8E8DC;padding:10px 11px;border-radius:12px}
 .empty{padding:33px 20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.6}
 .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:88px;background:#1F2924;color:#fff;padding:11px 14px;border-radius:12px;font-size:12px;opacity:0;pointer-events:none;transition:.25s;z-index:80}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -1089,6 +1099,28 @@ function closeAuth(){
   modal.classList.remove("show");
   modal.setAttribute("aria-hidden","true");
 }
+
+async function testSupabaseConnection(){
+  const client=getSupabaseClient();
+  const status=document.getElementById("authStatus");
+  if(!client){
+    if(status) status.innerHTML='<div class="auth-error">Supabase SDK가 로드되지 않았어요.</div>';
+    return;
+  }
+  if(status) status.innerHTML='<div class="auth-status">Supabase 연결 확인 중…</div>';
+  const timeout = new Promise((_,reject)=>setTimeout(()=>reject(new Error("REQUEST_TIMEOUT")),8000));
+  try{
+    const request=client.auth.getSession();
+    const r=await Promise.race([request,timeout]);
+    if(r.error) throw r.error;
+    if(status) status.innerHTML='<div class="auth-ok">Supabase 연결 정상 ✓</div>';
+  }catch(e){
+    const msg=e?.message==="REQUEST_TIMEOUT"
+      ? "Supabase 연결 응답이 없어요."
+      : (e?.message||"연결 확인에 실패했어요.");
+    if(status) status.innerHTML='<div class="auth-error">'+escapeHTML(msg)+'</div>';
+  }
+}
 function toggleAuthMode(){authMode=authMode==="login"?"signup":"login";updateAuthModeUI();}
 function updateAuthModeUI(){
   const title=document.getElementById("authTitle");
@@ -1104,27 +1136,78 @@ function updateAuthModeUI(){
 async function submitAuth(){
   const client=getSupabaseClient();
   const email=document.getElementById("authEmail")?.value.trim();
-  const password=document.getElementById("authPassword")?.value || "";
+  const password=document.getElementById("authPassword")?.value||"";
   const msg=document.getElementById("authMessage");
-  if(!email||!password){if(msg)msg.textContent="이메일과 비밀번호를 입력해 주세요.";return;}
-  if(!client){if(msg)msg.textContent="인증 서버를 불러오는 중이에요. 잠시 후 다시 시도해 주세요.";return;}
-  if(msg) msg.textContent="처리 중…";
+  const status=document.getElementById("authStatus");
+  const submit=document.getElementById("authSubmit");
+
+  if(!email||!password){
+    if(msg) msg.textContent="이메일과 비밀번호를 입력해 주세요.";
+    if(status) status.innerHTML='<div class="auth-error">입력값을 확인해 주세요.</div>';
+    return;
+  }
+
+  if(!client){
+    if(status) status.innerHTML='<div class="auth-error">Supabase 연결을 준비하지 못했어요.</div>';
+    return;
+  }
+
+  if(submit){
+    submit.disabled=true;
+    submit.classList.add("auth-busy");
+    submit.innerHTML='<span class="auth-spinner"></span>연결 중…';
+  }
+  if(msg) msg.textContent="Supabase에 연결하고 있어요. 최대 12초까지 걸릴 수 있어요.";
+  if(status) status.innerHTML="";
+
+  const timeout = new Promise((_, reject)=>
+    setTimeout(()=>reject(new Error("REQUEST_TIMEOUT")),12000)
+  );
+
   try{
-    const r=authMode==="login"
-      ? await client.auth.signInWithPassword({email,password})
-      : await client.auth.signUp({email,password});
+    const request = authMode==="login"
+      ? client.auth.signInWithPassword({email,password})
+      : client.auth.signUp({email,password});
+
+    const r = await Promise.race([request, timeout]);
     if(r.error) throw r.error;
+
     if(authMode==="signup" && !r.data.session){
-      if(msg)msg.textContent="회원가입 완료. 이메일 인증이 필요할 수 있어요.";
+      if(msg) msg.textContent="회원가입은 완료됐어요. 이메일 인증이 필요한 경우 메일함을 확인해 주세요.";
+      if(status) status.innerHTML='<div class="auth-ok">회원가입 성공 · 이메일 인증이 필요할 수 있어요.</div>';
       return;
     }
-    currentUser=r.data.user;
-    closeAuth();
+
+    currentUser=r.data.user||null;
     await refreshAccountUI();
-    if(typeof loadSavedPushState==="function") await loadSavedPushState();
-    toast(authMode==="login"?"로그인했어요.":"회원가입됐어요.");
+
+    if(currentUser && typeof loadSavedPushState==="function"){
+      try{ await loadSavedPushState(); }catch(e){}
+    }
+
+    if(status) status.innerHTML='<div class="auth-ok">로그인 성공!</div>';
+    if(msg) msg.textContent=currentUser?.email || "";
+    setTimeout(()=>closeAuth(),600);
+
   }catch(e){
-    if(msg)msg.textContent=e.message||"로그인 처리 중 문제가 생겼어요.";
+    let userMessage="로그인에 실패했어요.";
+    if(e?.message==="REQUEST_TIMEOUT"){
+      userMessage="12초 동안 응답이 없어요. Supabase 연결 또는 브라우저 네트워크를 확인해 주세요.";
+    }else if(/Invalid login credentials/i.test(e?.message||"")){
+      userMessage="이메일 또는 비밀번호가 올바르지 않아요.";
+    }else if(/Email not confirmed/i.test(e?.message||"")){
+      userMessage="이메일 인증이 아직 완료되지 않았어요.";
+    }else if(e?.message){
+      userMessage=e.message;
+    }
+    if(msg) msg.textContent=userMessage;
+    if(status) status.innerHTML='<div class="auth-error">'+escapeHTML(userMessage)+'</div>';
+  }finally{
+    if(submit){
+      submit.disabled=false;
+      submit.classList.remove("auth-busy");
+      submit.textContent=authMode==="login"?"로그인":"회원가입";
+    }
   }
 }
 
