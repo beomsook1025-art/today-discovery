@@ -1,27 +1,6 @@
-<!doctype html>
-<html lang="ko">
 <head>
-<meta charset="utf-8">
-
 <meta name="theme-color" content="#244A3B">
-});
-if(modal && e.target===modal) closeAuth();
-});
-if(btn){
-    e.preventDefault();
-    e.stopPropagation();
-    openAuth();
-  }
-}, true);
-document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
-  document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
-  document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
-  document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
-  modal?.addEventListener("click",(e)=>{if(e.target===modal)closeAuth();});
-});
-  updateAccountUI();
-});
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -29,7 +8,7 @@ document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v26</title>
+<title>오늘의 나 발견 · v27</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -147,7 +126,7 @@ body{min-height:100vh}
 .premium .badge{display:inline-block;background:rgba(255,255,255,.13);padding:6px 9px;border-radius:999px;font-size:10px;font-weight:900}
 .premium h2{font-size:22px;letter-spacing:-1px;margin:11px 0 7px}.premium p{font-size:12px;line-height:1.55;color:#E9E6FF;margin:0}
 .premium ul{padding-left:19px;margin:13px 0 0;color:#F6F3FF;font-size:12px;line-height:1.9}
-.profile-card{padding:20px;display:flex;gap:14px;align-items:center}.avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(145deg,#D4E8DA,#EBDCF8);display:grid;place-items:center;font-size:24px}
+.profile-card{padding:20px;display:flex;gap:14px;align-items:center;min-height:92px}.avatar{width:58px;height:58px;min-width:58px;min-height:58px;flex:0 0 58px;border-radius:50%;background:linear-gradient(145deg,#D4E8DA,#EBDCF8);display:grid;place-items:center;position:relative;overflow:hidden;line-height:1}.avatar::before{content:"";width:15px;height:15px;border-radius:50%;background:#fff;position:absolute;top:12px;left:50%;transform:translateX(-50%);opacity:.95}.avatar::after{content:"";width:31px;height:18px;border-radius:18px 18px 8px 8px;background:#fff;position:absolute;bottom:9px;left:50%;transform:translateX(-50%);opacity:.95}
 .menu{display:grid;gap:2px;margin-top:13px}.menu-item{background:#fff;border:1px solid var(--line);padding:15px;border-radius:15px;display:flex;justify-content:space-between;align-items:center}
 .menu-left{font-size:13px;font-weight:800}.menu-right{color:#A0A6A2;font-size:12px}
 
@@ -161,7 +140,7 @@ body{min-height:100vh}
 .community-posts{display:grid;gap:11px}
 .community-post{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 10px 24px rgba(24,42,34,.045)}
 .post-head{display:flex;align-items:center;gap:9px}
-.avatar.small{width:34px;height:34px;font-size:15px}
+.avatar.small{width:34px;height:34px;min-width:34px;min-height:34px;flex:0 0 34px;font-size:15px}.avatar.small::before,.avatar.small::after{display:none}
 .avatar.small.purple{background:linear-gradient(145deg,#EAE3FF,#F5F1FF)}
 .avatar.small.orange{background:linear-gradient(145deg,#FFF0DE,#FFF9EF)}
 .post-user{font-size:12px;font-weight:900}
@@ -282,10 +261,13 @@ button{touch-action:manipulation}
 @media(max-width:380px){
   .hero h1{font-size:28px}.question-title{font-size:23px}
 }
+
+/* v27 responsive hardening */
+html{overflow-x:hidden}body{overflow-x:hidden}.app{width:100%;overflow-x:hidden}.screen{overflow-x:hidden}.profile-card>div:last-child{min-width:0}.profile-card>div:last-child>div:last-child{overflow-wrap:anywhere;word-break:keep-all}.record-photo img,.photo-preview img{max-width:100%;height:auto;object-fit:cover}.community-filter{-webkit-overflow-scrolling:touch;scrollbar-width:none}.community-filter::-webkit-scrollbar{display:none}@media(max-width:360px){.screen{padding-left:14px;padding-right:14px}.hero h1{font-size:27px}.question-title{font-size:23px}.profile-card{padding:16px;gap:11px}.profile-card>div:last-child>div:last-child{font-size:16px!important}}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-</head></head>
+</head>
 <body>
 <div class="app">
 <div class="top-safe"></div>
@@ -437,7 +419,7 @@ button{touch-action:manipulation}
 <section id="my" class="screen">
   <div class="screen-head"><button class="app-back" onclick="appBack()">‹</button><div class="title">마이페이지</div><div style="margin-left:auto"><button class="icon-btn" onclick="show('settings')">⚙</button></div></div>
   <div class="card profile-card">
-    <div class="avatar">◡</div>
+    <div class="avatar" role="img" aria-label="프로필 이미지"></div>
     <div><div style="font-size:11px;color:var(--muted)">오늘의 나 발견</div><div style="font-size:18px;font-weight:950;margin-top:3px">아직 이름을 정하지 않았어요.</div></div>
   </div>
   
@@ -445,7 +427,7 @@ button{touch-action:manipulation}
   <div class="card" style="padding:18px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div><div class="eyebrow">ACCOUNT</div><div id="accountText" style="font-size:13px;font-weight:900;margin-top:5px">로그인하지 않았어요.</div></div>
-      <button class="secondary" id="accountButton" type="button" onclick="openAuth(); return false;" onclick="return openAuth();">로그인</button>
+      <button class="secondary" id="accountButton" type="button" onclick="return openAuth();">로그인</button>
     </div>
   </div>
 </div>
@@ -824,6 +806,8 @@ function renderQuestion(){
   }
   document.getElementById('answerStatus').textContent=skipped[qi]?'이번 질문은 건너뛰었어요.':answers[qi].length?`${answers[qi].length}개 선택됨`:'선택하지 않아도 괜찮아요.';
   document.getElementById('qPrev').style.visibility=qi===0?'hidden':'visible';
+  const next=document.getElementById('qNext');
+  if(next) next.textContent=qi===questions.length-1?'결과 보기':'다음';
 }
 function skipQuestion(){answers[qi]=[];skipped[qi]=true;nextQuestion();}
 function nextQuestion(){if(qi<questions.length-1){qi++;renderQuestion();}else showResult();}
@@ -1095,13 +1079,6 @@ let authMode = "login";
 let notificationsEnabled = localStorage.getItem("todayDiscoveryNotifications") === "true";
 let pushSubscription = null;
 
-function getSupabaseClient(){
-  if(supabaseClient) return supabaseClient;
-  if(!window.supabase || !window.supabase.createClient) return null;
-  supabaseClient = window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-  return supabaseClient;
-}
-
 
 
 
@@ -1302,42 +1279,30 @@ window.addEventListener('popstate',(event)=>{
     renderScreen('home');
   }
 });
-window.addEventListener('load',()=>{
-  appHistory.length=1; appHistory[0]='home';
-  history.replaceState({todayDiscovery:true,screen:'home'},'', '#home');
-  renderScreen('home');
-});
 let toastTimer; function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 </script>
 
 <script>
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=27").catch(() => {}), {once:true});
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-  document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
-  document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
-  document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
-  document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
-  document.getElementById("authModal")?.addEventListener("click",e=>{if(e.target.id==="authModal")closeAuth();});
-  if(typeof updateAccountUI==="function") updateAccountUI();
-});
-
 (function bindAuthUI(){
+  let bound=false;
   function bind(){
+    if(bound) return; bound=true;
     const modal=document.getElementById("authModal");
     document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
     document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
     document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
     document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
-    modal?.addEventListener("click",(e)=>{if(e.target===modal)closeAuth();});
-    document.addEventListener("keydown",(e)=>{if(e.key==="Escape")closeAuth();});
+    modal?.addEventListener("click",e=>{if(e.target===modal)closeAuth();});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAuth();});
+    if(typeof updateAccountUI==="function") updateAccountUI();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
   else bind();
 })();
-
 </script>
 
 <div id="authModal" class="premium-modal" aria-hidden="true">
@@ -1345,7 +1310,7 @@ document.addEventListener("DOMContentLoaded",()=>{
     <div class="modal-head"><div class="wordmark">오늘의 나 발견</div><button class="icon-btn" id="authCloseButton" type="button" aria-label="닫기">×</button></div>
     <div class="eyebrow">ACCOUNT</div>
     <h2 id="authTitle">로그인</h2>
-    <p class="premium-sub">기록과 알림을 저장하려면 계정이 필요해요.</p>
+    <p class="premium-sub">탐색은 로그인 없이 할 수 있어요. 기록 동기화와 계정 기능을 쓰려면 로그인해 주세요.</p>
     <input id="authEmail" class="text-input" type="email" autocomplete="email" placeholder="이메일">
     <input id="authPassword" class="text-input" type="password" autocomplete="current-password" placeholder="비밀번호">
     <button class="primary" id="authSubmit" type="button" style="width:100%;margin-top:12px">로그인</button>
