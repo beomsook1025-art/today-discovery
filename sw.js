@@ -1,17 +1,53 @@
-const CACHE = "today-discovery-v27";
-const CORE = ["./", "./index.html", "./manifest.webmanifest"];
+const CACHE = "today-discovery-v28";
+const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
+
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE.filter(Boolean))).then(()=>self.skipWaiting()));
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache => cache.addAll(CORE))
+      .then(() => self.skipWaiting())
+  );
 });
+
 self.addEventListener("activate", event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
 });
+
 self.addEventListener("fetch", event => {
-  const req=event.request;
-  if(req.method!=="GET") return;
-  event.respondWith(fetch(req).then(res=>{
-    const copy=res.clone();
-    if(new URL(req.url).origin===self.location.origin) caches.open(CACHE).then(c=>c.put(req,copy)).catch(()=>{});
-    return res;
-  }).catch(()=>caches.match(req).then(r=>r || caches.match("./index.html"))));
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+
+  // HTML/navigation: network-first so deployed fixes are picked up quickly.
+  if (req.mode === "navigate" || req.destination === "document") {
+    event.respondWith(
+      fetch(req)
+        .then(res => {
+          const copy = res.clone();
+          caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(req).then(cached => cached || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Same-origin static assets: cache-first, then network, without returning HTML for a missing asset.
+  event.respondWith(
+    caches.match(req)
+      .then(cached => cached || fetch(req).then(res => {
+        if (res && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(cache => cache.put(req, copy)).catch(() => {});
+        }
+        return res;
+      }))
+      .catch(() => caches.match(req))
+  );
 });
