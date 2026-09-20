@@ -1,6 +1,9 @@
+<!doctype html>
+<html lang="ko">
 <head>
+<meta charset="utf-8">
+
 <meta name="theme-color" content="#244A3B">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -8,7 +11,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견 · v27</title>
+<title>오늘의 나 발견 · v26</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -126,7 +129,7 @@ body{min-height:100vh}
 .premium .badge{display:inline-block;background:rgba(255,255,255,.13);padding:6px 9px;border-radius:999px;font-size:10px;font-weight:900}
 .premium h2{font-size:22px;letter-spacing:-1px;margin:11px 0 7px}.premium p{font-size:12px;line-height:1.55;color:#E9E6FF;margin:0}
 .premium ul{padding-left:19px;margin:13px 0 0;color:#F6F3FF;font-size:12px;line-height:1.9}
-.profile-card{padding:20px;display:flex;gap:14px;align-items:center;min-height:92px}.avatar{width:58px;height:58px;min-width:58px;min-height:58px;flex:0 0 58px;border-radius:50%;background:linear-gradient(145deg,#D4E8DA,#EBDCF8);display:grid;place-items:center;position:relative;overflow:hidden;line-height:1}.avatar::before{content:"";width:15px;height:15px;border-radius:50%;background:#fff;position:absolute;top:12px;left:50%;transform:translateX(-50%);opacity:.95}.avatar::after{content:"";width:31px;height:18px;border-radius:18px 18px 8px 8px;background:#fff;position:absolute;bottom:9px;left:50%;transform:translateX(-50%);opacity:.95}
+.profile-card{padding:20px;display:flex;gap:14px;align-items:center}.avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(145deg,#D4E8DA,#EBDCF8);display:grid;place-items:center;font-size:24px}
 .menu{display:grid;gap:2px;margin-top:13px}.menu-item{background:#fff;border:1px solid var(--line);padding:15px;border-radius:15px;display:flex;justify-content:space-between;align-items:center}
 .menu-left{font-size:13px;font-weight:800}.menu-right{color:#A0A6A2;font-size:12px}
 
@@ -140,7 +143,7 @@ body{min-height:100vh}
 .community-posts{display:grid;gap:11px}
 .community-post{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 10px 24px rgba(24,42,34,.045)}
 .post-head{display:flex;align-items:center;gap:9px}
-.avatar.small{width:34px;height:34px;min-width:34px;min-height:34px;flex:0 0 34px;font-size:15px}.avatar.small::before,.avatar.small::after{display:none}
+.avatar.small{width:34px;height:34px;font-size:15px}
 .avatar.small.purple{background:linear-gradient(145deg,#EAE3FF,#F5F1FF)}
 .avatar.small.orange{background:linear-gradient(145deg,#FFF0DE,#FFF9EF)}
 .post-user{font-size:12px;font-weight:900}
@@ -261,13 +264,10 @@ button{touch-action:manipulation}
 @media(max-width:380px){
   .hero h1{font-size:28px}.question-title{font-size:23px}
 }
-
-/* v27 responsive hardening */
-html{overflow-x:hidden}body{overflow-x:hidden}.app{width:100%;overflow-x:hidden}.screen{overflow-x:hidden}.profile-card>div:last-child{min-width:0}.profile-card>div:last-child>div:last-child{overflow-wrap:anywhere;word-break:keep-all}.record-photo img,.photo-preview img{max-width:100%;height:auto;object-fit:cover}.community-filter{-webkit-overflow-scrolling:touch;scrollbar-width:none}.community-filter::-webkit-scrollbar{display:none}@media(max-width:360px){.screen{padding-left:14px;padding-right:14px}.hero h1{font-size:27px}.question-title{font-size:23px}.profile-card{padding:16px;gap:11px}.profile-card>div:last-child>div:last-child{font-size:16px!important}}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-</head>
+</head></head>
 <body>
 <div class="app">
 <div class="top-safe"></div>
@@ -298,7 +298,7 @@ html{overflow-x:hidden}body{overflow-x:hidden}.app{width:100%;overflow-x:hidden}
   <div class="section">
     <div class="section-head"><div class="section-title">나의 진행 상황</div><div class="small-link" onclick="show('program')">전체 보기</div></div>
     <div class="card progress-card">
-      <div class="progress-row"><span>30일 나를 발견하는 여정</span><b style="color:var(--green)">5 / 30일</b></div>
+      <div class="progress-row"><span>30일 나를 발견하는 여정</span><b style="color:var(--green)" data-program-progress>0 / 30일</b></div>
       <div class="progress-bar"><div class="progress-fill"></div></div>
       <div style="display:flex;justify-content:space-between;margin-top:11px;font-size:11px;color:var(--muted)"><span>5일 연속 기록 중</span><span>다음 실험까지 2일</span></div>
     </div>
@@ -419,7 +419,7 @@ html{overflow-x:hidden}body{overflow-x:hidden}.app{width:100%;overflow-x:hidden}
 <section id="my" class="screen">
   <div class="screen-head"><button class="app-back" onclick="appBack()">‹</button><div class="title">마이페이지</div><div style="margin-left:auto"><button class="icon-btn" onclick="show('settings')">⚙</button></div></div>
   <div class="card profile-card">
-    <div class="avatar" role="img" aria-label="프로필 이미지"></div>
+    <div class="avatar">◡</div>
     <div><div style="font-size:11px;color:var(--muted)">오늘의 나 발견</div><div style="font-size:18px;font-weight:950;margin-top:3px">아직 이름을 정하지 않았어요.</div></div>
   </div>
   
@@ -427,7 +427,7 @@ html{overflow-x:hidden}body{overflow-x:hidden}.app{width:100%;overflow-x:hidden}
   <div class="card" style="padding:18px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div><div class="eyebrow">ACCOUNT</div><div id="accountText" style="font-size:13px;font-weight:900;margin-top:5px">로그인하지 않았어요.</div></div>
-      <button class="secondary" id="accountButton" type="button" onclick="return openAuth();">로그인</button>
+      <button class="secondary" id="accountButton" type="button" onclick="openAuth(); return false;" onclick="return openAuth();">로그인</button>
     </div>
   </div>
 </div>
@@ -777,7 +777,181 @@ let qi=0;
 let answers=questions.map(()=>[]);
 let skipped=questions.map(()=>false);
 
-function startQuiz(){qi=0;answers=questions.map(()=>[]);skipped=questions.map(()=>false);show('quiz');renderQuestion();}
+const DAILY_PROGRESS_KEY = 'todayDiscoveryDailyProgress';
+function todayKey(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function loadDailyProgress(){
+  try{
+    const all=JSON.parse(localStorage.getItem(DAILY_PROGRESS_KEY)||'{}');
+    return all[todayKey()] || null;
+  }catch(e){return null;}
+}
+function saveDailyProgress(extra={}){
+  try{
+    const all=JSON.parse(localStorage.getItem(DAILY_PROGRESS_KEY)||'{}');
+    all[todayKey()]={
+      qi,
+      answers,
+      skipped,
+      completed:!!extra.completed,
+      completedAt:extra.completedAt||null,
+      programDay:extra.programDay || all[todayKey()]?.programDay || programSession.currentDay || getProgramDayFromLocal(),
+      updatedAt:new Date().toISOString()
+    };
+    localStorage.setItem(DAILY_PROGRESS_KEY,JSON.stringify(all));
+    // Keep only the most recent 31 days.
+    const keys=Object.keys(all).sort();
+    while(keys.length>31){delete all[keys.shift()];}
+    localStorage.setItem(DAILY_PROGRESS_KEY,JSON.stringify(all));
+    updateProgramProgress();
+    scheduleCloudSync();
+  }catch(e){}
+}
+function updateProgramProgress(){
+  try{
+    const all=JSON.parse(localStorage.getItem(DAILY_PROGRESS_KEY)||'{}');
+    const completed=Object.values(all).filter(x=>x?.completed).length;
+    const shown=Math.min(Math.max(completed,0),30);
+    document.querySelectorAll('[data-program-progress]').forEach(el=>el.textContent=`${shown} / 30일`);
+    document.querySelectorAll('[data-program-progress-percent]').forEach(el=>el.textContent=`${Math.round(Math.min(completed,30)/30*100)}%`);
+  }catch(e){}
+}
+
+function getProgramDayFromLocal(){
+  try{
+    const all=JSON.parse(localStorage.getItem(DAILY_PROGRESS_KEY)||'{}');
+    const completed=Object.values(all).filter(x=>x?.completed).length;
+    return Math.min(completed+1,30);
+  }catch(e){ return 1; }
+}
+
+let programSession={currentDay:1,startedAt:null,lastActiveAt:null,completedAt:null};
+async function hydrateProgramSession(){
+  const client=getSupabaseClient();
+  if(!client || !currentUser) return;
+  try{
+    const {data,error}=await client.from('program_sessions').select('current_day,started_at,last_active_at,completed_at').eq('user_id',currentUser.id).eq('program_id','30day-discovery').maybeSingle();
+    if(error) throw error;
+    if(data){
+      programSession={currentDay:Math.min(Math.max(Number(data.current_day)||1,1),30),startedAt:data.started_at||null,lastActiveAt:data.last_active_at||null,completedAt:data.completed_at||null};
+      localStorage.setItem('todayDiscoveryProgramSession',JSON.stringify(programSession));
+    } else {
+      const now=new Date().toISOString();
+      const row={user_id:currentUser.id,program_id:'30day-discovery',current_day:1,started_at:now,last_active_at:now};
+      const r=await client.from('program_sessions').upsert(row,{onConflict:'user_id,program_id'});
+      if(r.error) throw r.error;
+      programSession={currentDay:1,startedAt:now,lastActiveAt:now,completedAt:null};
+      localStorage.setItem('todayDiscoveryProgramSession',JSON.stringify(programSession));
+    }
+    updateProgramProgress();
+  }catch(e){
+    try{programSession=JSON.parse(localStorage.getItem('todayDiscoveryProgramSession')||'null')||programSession;}catch(_){ }
+  }
+}
+async function saveProgramSession(completedToday=false){
+  const now=new Date().toISOString();
+  if(!programSession.startedAt) programSession.startedAt=now;
+  programSession.lastActiveAt=now;
+  if(completedToday){
+    programSession.currentDay=Math.min(30,Math.max(1,Number(programSession.currentDay)||1));
+    if(programSession.currentDay<30) programSession.currentDay+=1;
+    else programSession.completedAt=now;
+  }
+  localStorage.setItem('todayDiscoveryProgramSession',JSON.stringify(programSession));
+  const client=getSupabaseClient();
+  if(!client || !currentUser) return;
+  try{
+    const {error}=await client.from('program_sessions').upsert({user_id:currentUser.id,program_id:'30day-discovery',current_day:programSession.currentDay,started_at:programSession.startedAt,last_active_at:programSession.lastActiveAt,completed_at:programSession.completedAt},{onConflict:'user_id,program_id'});
+    if(error) throw error;
+  }catch(e){ }
+}
+
+let cloudSyncTimer=null;
+function scheduleCloudSync(){
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>syncTodayProgressToCloud(),350);
+}
+
+async function syncTodayProgressToCloud(){
+  const client=getSupabaseClient();
+  if(!client || !currentUser) return;
+  const local=loadDailyProgress();
+  if(!local) return;
+  const payload={
+    user_id:currentUser.id,
+    progress_date:todayKey(),
+    program_day:local.programDay || getProgramDayFromLocal(),
+    question_index:Math.max(0,Math.min(Number(local.qi)||0,questions.length-1)),
+    answers:Array.isArray(local.answers)?local.answers:[],
+    skipped:Array.isArray(local.skipped)?local.skipped:[],
+    completed:!!local.completed,
+    completed_at:local.completedAt || null,
+    updated_at:new Date().toISOString()
+  };
+  try{
+    const {error}=await client.from('daily_progress').upsert(payload,{onConflict:'user_id,progress_date'});
+    if(error) throw error;
+  }catch(e){
+    // Local-first: keep the answer and retry on the next meaningful interaction.
+  }
+}
+
+async function hydrateProgressFromCloud(){
+  const client=getSupabaseClient();
+  if(!client || !currentUser) return;
+  try{
+    const {data,error}=await client.from('daily_progress')
+      .select('progress_date,program_day,question_index,answers,skipped,completed,completed_at,updated_at')
+      .eq('user_id',currentUser.id)
+      .order('progress_date',{ascending:false})
+      .limit(31);
+    if(error) throw error;
+    const cloud={};
+    (data||[]).forEach(row=>{
+      cloud[row.progress_date]={
+        qi:row.question_index, answers:row.answers||[], skipped:row.skipped||[],
+        completed:!!row.completed, completedAt:row.completed_at||null,
+        programDay:row.program_day, updatedAt:row.updated_at||null
+      };
+    });
+    const local=JSON.parse(localStorage.getItem(DAILY_PROGRESS_KEY)||'{}');
+    Object.entries(cloud).forEach(([date,row])=>{
+      const l=local[date];
+      const lt=l?.updatedAt ? Date.parse(l.updatedAt) : 0;
+      const ct=row?.updatedAt ? Date.parse(row.updatedAt) : 0;
+      if(!l || ct>=lt) local[date]=row;
+    });
+    localStorage.setItem(DAILY_PROGRESS_KEY,JSON.stringify(local));
+    const today=local[todayKey()];
+    if(today){
+      qi=Math.max(0,Math.min(Number(today.qi)||0,questions.length-1));
+      answers=Array.isArray(today.answers)?today.answers:questions.map(()=>[]);
+      skipped=Array.isArray(today.skipped)?today.skipped:questions.map(()=>false);
+    }
+    updateProgramProgress();
+  }catch(e){
+    // Cloud unavailable: local data remains the source of truth for this session.
+  }
+}
+
+function startQuiz(){
+  const saved=loadDailyProgress();
+  if(saved){
+    qi=Math.min(Math.max(Number(saved.qi)||0,0),questions.length-1);
+    answers=Array.isArray(saved.answers)?saved.answers:questions.map(()=>[]);
+    skipped=Array.isArray(saved.skipped)?saved.skipped:questions.map(()=>false);
+  }else{
+    qi=0; answers=questions.map(()=>[]); skipped=questions.map(()=>false);
+  }
+  saveProgramSession(false);
+  show('quiz');
+  renderQuestion();
+}
 function renderQuestion(){
   const q=questions[qi];
   document.getElementById('qCount').textContent=`${qi+1} / ${questions.length}`;
@@ -794,23 +968,23 @@ function renderQuestion(){
     btn.onclick=()=>{
       if(q.type==='single') answers[qi]=[{id,key}];
       else {const idx=answers[qi].findIndex(x=>x.id===id); idx>=0?answers[qi].splice(idx,1):answers[qi].push({id,key});}
-      skipped[qi]=false; renderQuestion();
+      skipped[qi]=false;
+      saveDailyProgress();
+      renderQuestion();
     };
     box.appendChild(btn);
   });
   if(q.type==='multi'){
     const btn=document.createElement('button'); btn.className='option';
     btn.innerHTML='<span class="check">✓</span><span class="option-text">전체 선택 / 전체 해제</span>';
-    btn.onclick=()=>{answers[qi]=answers[qi].length===q.opts.length?[]:q.opts.map(([t,id,key])=>({id,key}));skipped[qi]=false;renderQuestion();};
+    btn.onclick=()=>{answers[qi]=answers[qi].length===q.opts.length?[]:q.opts.map(([t,id,key])=>({id,key}));skipped[qi]=false;saveDailyProgress();renderQuestion();};
     box.appendChild(btn);
   }
   document.getElementById('answerStatus').textContent=skipped[qi]?'이번 질문은 건너뛰었어요.':answers[qi].length?`${answers[qi].length}개 선택됨`:'선택하지 않아도 괜찮아요.';
   document.getElementById('qPrev').style.visibility=qi===0?'hidden':'visible';
-  const next=document.getElementById('qNext');
-  if(next) next.textContent=qi===questions.length-1?'결과 보기':'다음';
 }
-function skipQuestion(){answers[qi]=[];skipped[qi]=true;nextQuestion();}
-function nextQuestion(){if(qi<questions.length-1){qi++;renderQuestion();}else showResult();}
+function skipQuestion(){answers[qi]=[];skipped[qi]=true;saveDailyProgress();nextQuestion();}
+function nextQuestion(){if(qi<questions.length-1){qi++;saveDailyProgress();renderQuestion();}else showResult();}
 function showResult(){
   const counts={}; let answered=0;
   answers.forEach(arr=>{if(arr.length){answered++;arr.forEach(x=>counts[x.key]=(counts[x.key]||0)+1);}});
@@ -831,6 +1005,10 @@ function showResult(){
   document.getElementById('rScores').innerHTML=
     `<div class="score-line"><div class="score-line-top"><span>응답한 질문</span><span>${answered}/${questions.length}</span></div><div class="score-track"><div class="score-fill" style="width:${coverage}%"></div></div></div>`+
     top.map(([k,v])=>`<div class="score-line"><div class="score-line-top"><span>${labels[k]||k}</span><span>${v}</span></div><div class="score-track"><div class="score-fill" style="width:${Math.max(10,v/max*100)}%"></div></div></div>`).join('');
+  const wasCompleted=!!loadDailyProgress()?.completed;
+  saveDailyProgress({completed:true,completedAt:wasCompleted?(loadDailyProgress()?.completedAt||new Date().toISOString()):new Date().toISOString()});
+  if(!wasCompleted) saveProgramSession(true);
+  updateProgramProgress();
   show('result');
 }
 
@@ -1081,11 +1259,6 @@ let pushSubscription = null;
 
 
 
-
-
-
-
-
 function getSupabaseClient(){
   if(supabaseClient) return supabaseClient;
   if(window.supabase?.createClient){
@@ -1093,6 +1266,17 @@ function getSupabaseClient(){
   }
   return supabaseClient;
 }
+function installAuthStateListener(){
+  const client=getSupabaseClient();
+  if(!client || window.__todayDiscoveryAuthListenerInstalled) return;
+  window.__todayDiscoveryAuthListenerInstalled=true;
+  client.auth.onAuthStateChange(async (_event,session)=>{
+    currentUser=session?.user||null;
+    updateAccountUI();
+    if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); }
+  });
+}
+
 function openAuth(mode="login"){
   authMode=mode;
   const modal=document.getElementById("authModal");
@@ -1170,6 +1354,8 @@ async function submitAuth(){
       return;
     }
     currentUser=r.data.user||null;
+    await hydrateProgramSession();
+    await hydrateProgressFromCloud();
     if(status)status.innerHTML='<div class="auth-ok">로그인 성공!</div>';
     if(msg)msg.textContent=currentUser?.email||"";
     updateAccountUI();
@@ -1191,12 +1377,29 @@ function updateAccountUI(){
   if(currentUser){
     text.textContent=currentUser.email||"로그인됨";
     btn.textContent="로그아웃";
-    btn.onclick=async()=>{try{await getSupabaseClient()?.auth.signOut()}catch(e){} currentUser=null; updateAccountUI();};
+    btn.onclick=async()=>{try{await getSupabaseClient()?.auth.signOut()}catch(e){} currentUser=null; programSession={currentDay:1,startedAt:null,lastActiveAt:null,completedAt:null}; updateAccountUI();};
   }else{
     text.textContent="로그인하지 않았어요.";
     btn.textContent="로그인";
     btn.onclick=()=>openAuth();
   }
+}
+
+async function refreshAccountUI(){
+  const client=getSupabaseClient();
+  if(!client){ currentUser=null; updateAccountUI(); return; }
+  try{
+    const {data}=await client.auth.getSession();
+    currentUser=data?.session?.user || null;
+  }catch(e){ currentUser=null; }
+  updateAccountUI();
+  if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); }
+}
+
+function loadSavedPushState(){
+  notificationsEnabled=localStorage.getItem("todayDiscoveryNotifications") === "true";
+  const status=document.getElementById('notificationStatus');
+  if(status) status.textContent=notificationsEnabled?'알림 켜짐':'알림 꺼짐';
 }
 
 const appHistory = ['home'];
@@ -1224,6 +1427,7 @@ function appBack(){
 function quizPrev(){
   if(typeof qi!=='undefined' && qi>0){
     qi--;
+    saveDailyProgress();
     renderQuestion();
   }else{
     appBack();
@@ -1257,6 +1461,7 @@ function renderScreen(id){
 
 
 window.addEventListener('load',()=>{
+  installAuthStateListener();
   refreshAccountUI();
   loadSavedPushState();
   appHistory.length=1;
@@ -1284,25 +1489,20 @@ let toastTimer; function toast(msg){const t=document.getElementById('toast');t.t
 
 <script>
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=27").catch(() => {}), {once:true});
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 }
 
-(function bindAuthUI(){
-  let bound=false;
-  function bind(){
-    if(bound) return; bound=true;
-    const modal=document.getElementById("authModal");
-    document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
-    document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
-    document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
-    document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
-    modal?.addEventListener("click",e=>{if(e.target===modal)closeAuth();});
-    document.addEventListener("keydown",e=>{if(e.key==="Escape")closeAuth();});
-    if(typeof updateAccountUI==="function") updateAccountUI();
-  }
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bind,{once:true});
-  else bind();
-})();
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("authCloseButton")?.addEventListener("click",closeAuth);
+  document.getElementById("authModeButton")?.addEventListener("click",toggleAuthMode);
+  document.getElementById("authSubmit")?.addEventListener("click",submitAuth);
+  document.getElementById("authTest")?.addEventListener("click",testSupabaseConnection);
+  document.getElementById("authModal")?.addEventListener("click",e=>{if(e.target.id==="authModal")closeAuth();});
+  if(typeof updateAccountUI==="function") updateAccountUI();
+});
+
+
+
 </script>
 
 <div id="authModal" class="premium-modal" aria-hidden="true">
@@ -1310,7 +1510,7 @@ if ("serviceWorker" in navigator) {
     <div class="modal-head"><div class="wordmark">오늘의 나 발견</div><button class="icon-btn" id="authCloseButton" type="button" aria-label="닫기">×</button></div>
     <div class="eyebrow">ACCOUNT</div>
     <h2 id="authTitle">로그인</h2>
-    <p class="premium-sub">탐색은 로그인 없이 할 수 있어요. 기록 동기화와 계정 기능을 쓰려면 로그인해 주세요.</p>
+    <p class="premium-sub">기록과 알림을 저장하려면 계정이 필요해요.</p>
     <input id="authEmail" class="text-input" type="email" autocomplete="email" placeholder="이메일">
     <input id="authPassword" class="text-input" type="password" autocomplete="current-password" placeholder="비밀번호">
     <button class="primary" id="authSubmit" type="button" style="width:100%;margin-top:12px">로그인</button>
