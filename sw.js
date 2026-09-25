@@ -1,4 +1,5 @@
-const CACHE_NAME = "today-discovery-v30";
+importScripts("./version.js");
+const CACHE_NAME = "today-discovery-v" + globalThis.APP_VERSION;
 const APP_SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", event => {
