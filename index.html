@@ -788,15 +788,45 @@ function readLocalRecords(){ try{ const raw=JSON.parse(localStorage.getItem(LOCA
 function recordFingerprint(r){ return [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f'); }
 async function mergeLocalRecordsAfterLogin(){
   const client=getSupabaseClient(); if(!client||!currentUser) return;
-  const local=readLocalRecords(); if(!local.length){ setRecordsSyncState('synced'); return; }
-  if(localStorage.getItem(RECORD_MERGE_KEY)===currentUser.id){ setRecordsSyncState('synced'); return; }
+  const local=readLocalRecords();
+  if(!local.length){ setRecordsSyncState('synced'); return; }
+
   setRecordsSyncState('syncing');
   try{
-    const payload=local.map((record,idx)=>({user_id:currentUser.id,local_key:recordFingerprint(record),title:record.title||'나의 새로운 기록',category:record.category||'오늘의 발견',note:record.note||'',mood:record.mood||null,has_photo:!!record.hasPhoto,record_date:record.date||null,metadata:{source:'local-first',original_index:idx},updated_at:new Date().toISOString()}));
-    const {error}=await client.from('user_records').upsert(payload,{onConflict:'user_id,local_key',ignoreDuplicates:false});
+    const userId=currentUser.id;
+    const payload=local.map((record,idx)=>({
+      user_id:userId,
+      local_key:recordFingerprint(record),
+      title:record.title||'나의 새로운 기록',
+      category:record.category||'오늘의 발견',
+      note:record.note||'',
+      mood:record.mood||null,
+      has_photo:!!record.hasPhoto,
+      record_date:record.date||null,
+      metadata:{
+        source:'local-first',
+        original_index:idx,
+        merged_at:new Date().toISOString()
+      },
+      updated_at:new Date().toISOString()
+    }));
+
+    const {error}=await client
+      .from('user_records')
+      .upsert(payload,{onConflict:'user_id,local_key',ignoreDuplicates:false});
     if(error) throw error;
-    localStorage.setItem(RECORD_MERGE_KEY,currentUser.id); setRecordsSyncState('synced');
-  }catch(e){ setRecordsSyncState('local'); }
+
+    // Do not use a one-time user flag here: new local records can be created
+    // after the first login and must remain eligible for later merges.
+    localStorage.setItem(RECORD_MERGE_KEY, JSON.stringify({
+      userId,
+      mergedAt:new Date().toISOString(),
+      count:local.length
+    }));
+    setRecordsSyncState('synced');
+  }catch(e){
+    setRecordsSyncState('local');
+  }
 }
 
 function todayKey(){
