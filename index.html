@@ -359,7 +359,7 @@ button{touch-action:manipulation}
 
 <div class="section">
     <div class="section-head"><div class="section-title">최근 발견</div><div class="small-link" onclick="show('record')">기록 보기</div></div>
-    <div class="timeline">
+    <div id="recordSyncStatus" class="record-private-note" aria-live="polite">로그인 전에는 이 기기에 저장돼요.</div><div class="timeline">
       <div class="timeline-item"><div class="timeline-mark">01</div><div><div class="timeline-date">9월 12일</div><div class="timeline-text">“돈과 시간에 쫓기지 않는 삶을 만들고 싶다.”</div></div></div>
       <div class="timeline-item"><div class="timeline-mark">02</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“새로운 걸 만들어서 사람들에게 써보게 하고 싶다.”</div></div></div>
       <div class="timeline-item"><div class="timeline-mark">03</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 하는 사람으로 남고 싶다.”</div></div></div>
@@ -780,6 +780,25 @@ let answers=questions.map(()=>[]);
 let skipped=questions.map(()=>false);
 
 const DAILY_PROGRESS_KEY = 'todayDiscoveryDailyProgress';
+const LOCAL_RECORDS_KEY = 'todayDiscoveryRecords';
+const RECORD_MERGE_KEY = 'todayDiscoveryRecordsMergedUser';
+let recordsSyncState = localStorage.getItem('todayDiscoveryRecordsSyncState') || 'local';
+function setRecordsSyncState(state){ recordsSyncState=state; localStorage.setItem('todayDiscoveryRecordsSyncState',state); const el=document.getElementById('recordSyncStatus'); if(el) el.textContent=state==='synced'?'계정과 동기화됨':state==='syncing'?'계정에 동기화 중…':'이 기기에 저장됨'; }
+function readLocalRecords(){ try{ const raw=JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY)||'[]'); return Array.isArray(raw)?raw:[]; }catch(e){ return []; } }
+function recordFingerprint(r){ return [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f'); }
+async function mergeLocalRecordsAfterLogin(){
+  const client=getSupabaseClient(); if(!client||!currentUser) return;
+  const local=readLocalRecords(); if(!local.length){ setRecordsSyncState('synced'); return; }
+  if(localStorage.getItem(RECORD_MERGE_KEY)===currentUser.id){ setRecordsSyncState('synced'); return; }
+  setRecordsSyncState('syncing');
+  try{
+    const payload=local.map((record,idx)=>({user_id:currentUser.id,local_key:recordFingerprint(record),title:record.title||'나의 새로운 기록',category:record.category||'오늘의 발견',note:record.note||'',mood:record.mood||null,has_photo:!!record.hasPhoto,record_date:record.date||null,metadata:{source:'local-first',original_index:idx},updated_at:new Date().toISOString()}));
+    const {error}=await client.from('user_records').upsert(payload,{onConflict:'user_id,local_key',ignoreDuplicates:false});
+    if(error) throw error;
+    localStorage.setItem(RECORD_MERGE_KEY,currentUser.id); setRecordsSyncState('synced');
+  }catch(e){ setRecordsSyncState('local'); }
+}
+
 function todayKey(){
   const d=new Date();
   const y=d.getFullYear();
@@ -1177,9 +1196,10 @@ function saveNewRecord(){
     hasPhoto:!!photo,
     date:new Date().toLocaleDateString('ko-KR')
   };
-  const saved=JSON.parse(localStorage.getItem('todayDiscoveryRecords')||'[]');
+  const saved=readLocalRecords();
   saved.unshift(record);
-  localStorage.setItem('todayDiscoveryRecords',JSON.stringify(saved));
+  localStorage.setItem(LOCAL_RECORDS_KEY,JSON.stringify(saved));
+  if(currentUser) mergeLocalRecordsAfterLogin();
 
   const list=document.querySelector('#record .timeline');
   if(list){
@@ -1275,7 +1295,7 @@ function installAuthStateListener(){
   client.auth.onAuthStateChange(async (_event,session)=>{
     currentUser=session?.user||null;
     updateAccountUI();
-    if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); }
+    if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); await mergeLocalRecordsAfterLogin(); }
   });
 }
 
@@ -1395,7 +1415,7 @@ async function refreshAccountUI(){
     currentUser=data?.session?.user || null;
   }catch(e){ currentUser=null; }
   updateAccountUI();
-  if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); }
+  if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); await mergeLocalRecordsAfterLogin(); }
 }
 
 function loadSavedPushState(){
