@@ -9,11 +9,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="나 발견">
 <link rel="manifest" href="./manifest.webmanifest">
+<title id="appTitle">오늘의 나 발견</title>
 <script src="./version.js"></script>
-<script>document.title = "오늘의 나 발견 · v" + globalThis.APP_VERSION;</script>
+<script>
+  const appTitle = document.getElementById("appTitle");
+  if (appTitle && globalThis.APP_VERSION) {
+    appTitle.textContent = `오늘의 나 발견 · v${globalThis.APP_VERSION}`;
+  }
+</script>
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -384,7 +389,7 @@ button{touch-action:manipulation}
     <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“내가 만든 것이 사람에게 도움이 되면 좋겠다.”</div></div></div>
     <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 한 사람으로 남고 싶다.”</div></div></div>
   </div>
-  <div class="section"><div class="card sim-insight"><b>v12 테스트</b><span>100명 사용자 시뮬레이션을 기준으로 질문·선택·기록·커뮤니티 흐름을 다듬었어요.</span></div></div>
+  <div class="section"><div class="card sim-insight"><b>나의 변화 돌아보기</b><span>질문과 기록을 모아, 시간이 지나며 달라진 생각을 돌아볼 수 있어요.</span></div></div>
 <div class="section"><div class="card empty">기록이 쌓일수록<br>‘예전의 나’와 ‘지금의 나’를 비교할 수 있어요.</div></div>
 </section>
 
