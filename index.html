@@ -314,8 +314,8 @@ button{touch-action:manipulation}
   <div class="section">
     <div class="stat-row">
       <div class="stat"><div class="k">발견한 나</div><div class="v">12</div></div>
-      <div class="stat"><div class="k">해본 실험</div><div class="v">4</div></div>
-      <div class="stat"><div class="k">기록 일수</div><div class="v">5</div></div>
+      <div class="stat"><div class="k">해본 실험</div><div class="v" id="experimentCount">0</div></div>
+      <div class="stat"><div class="k">기록 일수</div><div class="v" id="recordDaysCount">0</div></div>
     </div>
   </div>
 
@@ -364,10 +364,12 @@ button{touch-action:manipulation}
 
 <div class="section">
     <div class="section-head"><div class="section-title">최근 발견</div><div class="small-link" onclick="show('record')">기록 보기</div></div>
-    <div id="recordSyncStatus" class="record-private-note" aria-live="polite">로그인 전에는 이 기기에 저장돼요.</div><div class="timeline">
-      <div class="timeline-item"><div class="timeline-mark">01</div><div><div class="timeline-date">9월 12일</div><div class="timeline-text">“돈과 시간에 쫓기지 않는 삶을 만들고 싶다.”</div></div></div>
-      <div class="timeline-item"><div class="timeline-mark">02</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“새로운 걸 만들어서 사람들에게 써보게 하고 싶다.”</div></div></div>
-      <div class="timeline-item"><div class="timeline-mark">03</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 하는 사람으로 남고 싶다.”</div></div></div>
+    <div id="recordSyncStatus" class="record-private-note" aria-live="polite">로그인 전에는 이 기기에 저장돼요.</div>
+    <div id="homeTimeline" class="timeline">
+      <div class="timeline-item" id="homeRecordEmptyState">
+        <div class="timeline-mark">✦</div>
+        <div><div class="timeline-date">아직 기록이 없어요</div><div class="timeline-text">오늘의 질문이나 경험을 기록하면 여기에 보여요.</div></div>
+      </div>
     </div>
   </div>
   <div class="section">
@@ -383,11 +385,11 @@ button{touch-action:manipulation}
 <section id="record" class="screen">
   <div class="screen-head"><button class="app-back" onclick="appBack()">‹</button><div><div class="eyebrow">MY LOG</div><div class="title">나의 기록</div></div><div style="margin-left:auto"><button class="icon-btn" onclick="show('addrecord')">＋</button></div></div>
   <div class="tag-grid" style="margin-bottom:13px"><span class="chip" style="background:var(--green);color:#fff">전체</span><span class="chip">질문</span><span class="chip">실험</span><span class="chip">성장</span></div>
-  <div class="timeline">
-    <div class="timeline-item"><div class="timeline-mark" style="background:#FFF0DE;color:#A06B2D">✓</div><div><div class="timeline-date">오늘</div><div class="timeline-text">오늘의 질문에 답했어요.<br>“내가 원하는 삶의 모습이 생각보다 선명하다.”</div></div></div>
-    <div class="timeline-item"><div class="timeline-mark" style="background:#EFEAFE;color:#6754B4">✦</div><div><div class="timeline-date">9월 12일 · 실험</div><div class="timeline-text">새로운 서비스 아이디어를 직접 만들어봤어요.<br>생각보다 만드는 게 재밌었어요.</div></div></div>
-    <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“내가 만든 것이 사람에게 도움이 되면 좋겠다.”</div></div></div>
-    <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 한 사람으로 남고 싶다.”</div></div></div>
+  <div id="recordTimeline" class="timeline">
+    <div class="timeline-item" id="recordEmptyState">
+      <div class="timeline-mark">✦</div>
+      <div><div class="timeline-date">아직 기록이 없어요</div><div class="timeline-text">오늘의 질문이나 경험을 기록하면 여기에 보여요.</div></div>
+    </div>
   </div>
   <div class="section"><div class="card sim-insight"><b>나의 변화 돌아보기</b><span>질문과 기록을 모아, 시간이 지나며 달라진 생각을 돌아볼 수 있어요.</span></div></div>
 <div class="section"><div class="card empty">기록이 쌓일수록<br>‘예전의 나’와 ‘지금의 나’를 비교할 수 있어요.</div></div>
@@ -789,12 +791,101 @@ const LOCAL_RECORDS_KEY = 'todayDiscoveryRecords';
 const RECORD_MERGE_KEY = 'todayDiscoveryRecordsMergedUser';
 let recordsSyncState = localStorage.getItem('todayDiscoveryRecordsSyncState') || 'local';
 function setRecordsSyncState(state){ recordsSyncState=state; localStorage.setItem('todayDiscoveryRecordsSyncState',state); const el=document.getElementById('recordSyncStatus'); if(el) el.textContent=state==='synced'?'계정과 동기화됨':state==='syncing'?'계정에 동기화 중…':'이 기기에 저장됨'; }
-function readLocalRecords(){ try{ const raw=JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY)||'[]'); return Array.isArray(raw)?raw:[]; }catch(e){ return []; } }
-function recordFingerprint(r){ return [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f'); }
+function readLocalRecords(){
+  try {
+    const raw = JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch (e) {
+    return [];
+  }
+}
+function createLocalRecordId(){
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+  return 'record-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+function saveLocalRecord(record){
+  const normalized = {
+    ...record,
+    id: record.id || createLocalRecordId(),
+    createdAt: record.createdAt || new Date().toISOString()
+  };
+  const records = readLocalRecords();
+  records.unshift(normalized);
+  localStorage.setItem(LOCAL_RECORDS_KEY, JSON.stringify(records));
+  return normalized;
+}
+function recordFingerprint(r){
+  // Keep the old fingerprint for legacy records already synced to Supabase.
+  // New records use stable IDs so identical entries do not collide.
+  return r.id || [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f');
+}
+function renderSavedRecords(){
+  const records = readLocalRecords();
+  const targets = [
+    {listId:'homeTimeline', emptyId:'homeRecordEmptyState', home:true},
+    {listId:'recordTimeline', emptyId:'recordEmptyState', home:false}
+  ];
+
+  targets.forEach(target => {
+    const list = document.getElementById(target.listId);
+    if (!list) return;
+
+    list.querySelectorAll('[data-user-record="true"]').forEach(item => item.remove());
+    const empty = document.getElementById(target.emptyId);
+    if (empty) empty.style.display = records.length ? 'none' : '';
+
+    records.slice().reverse().forEach(record => {
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      item.dataset.userRecord = 'true';
+
+      const mark = document.createElement('div');
+      mark.className = 'timeline-mark';
+      const moodIcons = ['😐','🙂','😊','😍','🤩'];
+      const mood = Number(record.mood);
+      mark.textContent = Number.isInteger(mood) && mood >= 1 && mood <= 5
+        ? moodIcons[mood - 1]
+        : (record.hasPhoto ? '📷' : '✦');
+
+      const body = document.createElement('div');
+      const date = document.createElement('div');
+      date.className = 'timeline-date';
+      const dateText = record.date || (record.createdAt
+        ? new Date(record.createdAt).toLocaleDateString('ko-KR')
+        : '날짜 없음');
+      date.textContent = target.home
+        ? dateText
+        : dateText + (record.category ? ' · ' + record.category : '');
+
+      const text = document.createElement('div');
+      text.className = 'timeline-text';
+      text.style.whiteSpace = 'pre-line';
+      const photoNote = record.hasPhoto ? ' · 사진 원본 미저장' : '';
+      text.textContent = (record.title || '나의 새로운 기록') + photoNote +
+        (record.note ? '\n' + record.note : '');
+
+      body.append(date, text);
+      item.append(mark, body);
+      list.prepend(item);
+    });
+  });
+
+  const experimentCount = records.filter(record => record.category === '실험').length;
+  const experimentStat = document.getElementById('experimentCount');
+  if (experimentStat) experimentStat.textContent = String(experimentCount);
+
+  const dateKeys = records.map(record => record.date ||
+    (record.createdAt ? new Date(record.createdAt).toLocaleDateString('ko-KR') : ''))
+    .filter(Boolean);
+  const recordDaysStat = document.getElementById('recordDaysCount');
+  if (recordDaysStat) recordDaysStat.textContent = String(new Set(dateKeys).size);
+}
 async function mergeLocalRecordsAfterLogin(){
   const client=getSupabaseClient(); if(!client||!currentUser) return;
   const local=readLocalRecords();
-  if(!local.length){ setRecordsSyncState('synced'); return; }
+  if(!local.length){ setRecordsSyncState('local'); return; }
 
   setRecordsSyncState('syncing');
   try{
@@ -1102,30 +1193,29 @@ function saveExperience(){
     return;
   }
 
-  const record = {
-    title:'새로운 장소에 가보기',
-    date:new Date().toLocaleDateString('ko-KR'),
-    note,
-    mood:selectedMood || '',
-    hasPhoto:!!photoFile
-  };
-  localStorage.setItem('todayDiscoveryLatestExperience', JSON.stringify(record));
-
-  // Make the experience visible in the record screen.
-  const recordList = document.querySelector('#record .timeline');
-  if(recordList){
-    const moodText = selectedMood ? ['😐','🙂','😊','😍','🤩'][Number(selectedMood)-1] : '✦';
-    const photoText = photoFile ? ' · 사진 첨부' : '';
-    const newItem = document.createElement('div');
-    newItem.className = 'timeline-item';
-    newItem.innerHTML =
-      `<div class="timeline-mark" style="background:#EEF4EF;color:#416852">${moodText}</div>
-       <div>
-         <div class="timeline-date">방금 전 · 실험 기록</div>
-         <div class="timeline-text">새로운 장소에 가보기${photoText}<br>${escapeHTML(note || '오늘의 느낌을 기록했어요.')}</div>
-       </div>`;
-    recordList.prepend(newItem);
+  let record;
+  try {
+    record = saveLocalRecord({
+      title:'새로운 장소에 가보기',
+      category:'실험',
+      date:new Date().toLocaleDateString('ko-KR'),
+      note,
+      mood:selectedMood || '',
+      hasPhoto:!!photoFile
+    });
+  } catch (e) {
+    toast('기록을 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.');
+    return;
   }
+
+  // Keep the previous latest-experience key for compatibility with older code.
+  try {
+    localStorage.setItem('todayDiscoveryLatestExperience', JSON.stringify(record));
+  } catch (e) {}
+
+  if (currentUser) void mergeLocalRecordsAfterLogin();
+  else setRecordsSyncState('local');
+  renderSavedRecords();
 
   document.getElementById('experienceNote').value='';
   document.getElementById('photoInput').value='';
@@ -1223,30 +1313,24 @@ function saveNewRecord(){
   const note=document.getElementById('newRecordNote').value.trim();
   const photo=document.getElementById('newRecordPhoto').files?.[0];
   if(!title && !note && !photo){toast('제목, 내용, 사진 중 하나는 남겨주세요.');return;}
-  const record={
-    title:title || '나의 새로운 기록',
-    category:newRecordCategory,
-    note:note || '사진으로 남긴 오늘의 기록',
-    mood:newRecordMood || '',
-    hasPhoto:!!photo,
-    date:new Date().toLocaleDateString('ko-KR')
-  };
-  const saved=readLocalRecords();
-  saved.unshift(record);
-  localStorage.setItem(LOCAL_RECORDS_KEY,JSON.stringify(saved));
-  if(currentUser) mergeLocalRecordsAfterLogin();
-
-  const list=document.querySelector('#record .timeline');
-  if(list){
-    const mark=newRecordMood ? ['😐','🙂','😊','😍','🤩'][Number(newRecordMood)-1] : '✦';
-    const photoText=photo?' · 사진 첨부':'';
-    const item=document.createElement('div');
-    item.className='timeline-item';
-    item.innerHTML=`<div class="timeline-mark" style="background:#EEF4EF;color:#416852">${mark}</div>
-      <div><div class="timeline-date">방금 전 · ${escapeHTML(newRecordCategory)}</div>
-      <div class="timeline-text">${escapeHTML(record.title)}${photoText}<br>${escapeHTML(record.note)}</div></div>`;
-    list.prepend(item);
+  let record;
+  try {
+    record = saveLocalRecord({
+      title:title || '나의 새로운 기록',
+      category:newRecordCategory,
+      note:note || '사진으로 남긴 오늘의 기록',
+      mood:newRecordMood || '',
+      hasPhoto:!!photo,
+      date:new Date().toLocaleDateString('ko-KR')
+    });
+  } catch (e) {
+    toast('기록을 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.');
+    return;
   }
+
+  if (currentUser) void mergeLocalRecordsAfterLogin();
+  else setRecordsSyncState('local');
+  renderSavedRecords();
 
   document.getElementById('newRecordTitle').value='';
   document.getElementById('newRecordNote').value='';
@@ -1294,11 +1378,7 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('button,.option,.test-card,.week-item,.setting-row')) haptic();
 });
 window.addEventListener('pageshow',()=>{
-  const saved=JSON.parse(localStorage.getItem('todayDiscoveryRecords')||'[]');
-  if(saved.length){
-    const stat=document.querySelector('.stat-row .stat:nth-child(2) .v');
-    if(stat) stat.textContent=saved.length + 4;
-  }
+  renderSavedRecords();
 });
 
 
@@ -1327,10 +1407,27 @@ function installAuthStateListener(){
   const client=getSupabaseClient();
   if(!client || window.__todayDiscoveryAuthListenerInstalled) return;
   window.__todayDiscoveryAuthListenerInstalled=true;
-  client.auth.onAuthStateChange(async (_event,session)=>{
+  client.auth.onAuthStateChange((event,session)=>{
     currentUser=session?.user||null;
     updateAccountUI();
-    if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); await mergeLocalRecordsAfterLogin(); }
+
+    // Supabase warns against awaiting client calls inside this callback:
+    // it runs under an auth lock and can deadlock. Defer hydration until
+    // after the synchronous callback has returned.
+    if(currentUser && event === 'SIGNED_IN'){
+      const userId = currentUser.id;
+      setTimeout(async ()=>{
+        if(!currentUser || currentUser.id !== userId) return;
+        try {
+          await hydrateProgramSession();
+          await hydrateProgressFromCloud();
+          await mergeLocalRecordsAfterLogin();
+        } catch(e) {
+          console.error('계정 데이터 동기화 실패', e);
+          setRecordsSyncState('local');
+        }
+      },0);
+    }
   });
 }
 
@@ -1411,8 +1508,6 @@ async function submitAuth(){
       return;
     }
     currentUser=r.data.user||null;
-    await hydrateProgramSession();
-    await hydrateProgressFromCloud();
     if(status)status.innerHTML='<div class="auth-ok">로그인 성공!</div>';
     if(msg)msg.textContent=currentUser?.email||"";
     updateAccountUI();
@@ -1519,6 +1614,7 @@ function renderScreen(id){
 
 window.addEventListener('load',()=>{
   installAuthStateListener();
+  renderSavedRecords();
   refreshAccountUI();
   loadSavedPushState();
   appHistory.length=1;
