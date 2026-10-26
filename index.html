@@ -794,7 +794,7 @@ function setRecordsSyncState(state){ recordsSyncState=state; localStorage.setIte
 function readLocalRecords(){
   try {
     const raw = JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY) || '[]');
-    return Array.isArray(raw) ? raw : [];
+    return Array.isArray(raw) ? raw.filter(record => record && typeof record === 'object' && !Array.isArray(record)) : [];
   } catch (e) {
     return [];
   }
@@ -1230,7 +1230,9 @@ function saveExperience(){
     b.style.background='#fff'; b.style.color='var(--text)'; b.style.borderColor='var(--line)';
   });
 
-  toast('오늘의 실험 기록을 저장했어요.');
+  toast(photoFile
+    ? '기록은 저장했어요. 사진 원본은 아직 보관되지 않아요.'
+    : '오늘의 실험 기록을 저장했어요.');
   setTimeout(()=>show('record'), 650);
 }
 
@@ -1338,7 +1340,9 @@ function saveNewRecord(){
   document.getElementById('newRecordPhotoPreview').innerHTML='<div><div style="font-size:28px">📷</div><div style="font-size:12px;font-weight:850;margin-top:4px">사진 추가</div></div>';
   newRecordMood=null;
   document.querySelectorAll('.new-mood-btn').forEach(b=>{b.style.background='#fff';b.style.color='var(--text)';b.style.borderColor='var(--line)'});
-  toast('새 기록을 저장했어요.');
+  toast(photo
+    ? '기록은 저장했어요. 사진 원본은 아직 보관되지 않아요.'
+    : '새 기록을 저장했어요.');
   setTimeout(()=>show('record'),500);
 }
 
@@ -1390,6 +1394,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ofqvZyCsYYbXUaCZIz5hGA_dxUS82G4
 
 let supabaseClient = null;
 let currentUser = null;
+let lastAuthHydratedUserId = null;
 let authMode = "login";
 let notificationsEnabled = localStorage.getItem("todayDiscoveryNotifications") === "true";
 let pushSubscription = null;
@@ -1414,15 +1419,24 @@ function installAuthStateListener(){
     // Supabase warns against awaiting client calls inside this callback:
     // it runs under an auth lock and can deadlock. Defer hydration until
     // after the synchronous callback has returned.
-    if(currentUser && event === 'SIGNED_IN'){
+    if(!currentUser){
+      lastAuthHydratedUserId = null;
+      return;
+    }
+    if(event === 'SIGNED_IN' && lastAuthHydratedUserId !== currentUser.id){
       const userId = currentUser.id;
+      lastAuthHydratedUserId = userId;
       setTimeout(async ()=>{
-        if(!currentUser || currentUser.id !== userId) return;
+        if(!currentUser || currentUser.id !== userId){
+          if(lastAuthHydratedUserId === userId) lastAuthHydratedUserId = null;
+          return;
+        }
         try {
           await hydrateProgramSession();
           await hydrateProgressFromCloud();
           await mergeLocalRecordsAfterLogin();
         } catch(e) {
+          if(lastAuthHydratedUserId === userId) lastAuthHydratedUserId = null;
           console.error('계정 데이터 동기화 실패', e);
           setRecordsSyncState('local');
         }
@@ -1545,7 +1559,13 @@ async function refreshAccountUI(){
     currentUser=data?.session?.user || null;
   }catch(e){ currentUser=null; }
   updateAccountUI();
-  if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); await mergeLocalRecordsAfterLogin(); }
+  if(currentUser){
+    const userId = currentUser.id;
+    await hydrateProgramSession();
+    await hydrateProgressFromCloud();
+    await mergeLocalRecordsAfterLogin();
+    if(currentUser?.id === userId) lastAuthHydratedUserId = userId;
+  }
 }
 
 function loadSavedPushState(){
