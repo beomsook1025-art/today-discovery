@@ -821,6 +821,39 @@ function recordFingerprint(r){
   // New records use stable IDs so identical entries do not collide.
   return r.id || [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f');
 }
+function migrateLegacyExperienceRecord(){
+  let legacy;
+  try {
+    legacy = JSON.parse(localStorage.getItem('todayDiscoveryLatestExperience') || 'null');
+  } catch (e) {
+    return;
+  }
+  if(!legacy || typeof legacy !== 'object' || Array.isArray(legacy)) return;
+
+  const records = readLocalRecords();
+  const exists = records.some(record =>
+    (legacy.id && record.id === legacy.id) ||
+    (!legacy.id &&
+      record.title === legacy.title &&
+      record.note === legacy.note &&
+      record.mood === legacy.mood &&
+      record.date === legacy.date)
+  );
+  if(exists) return;
+
+  const migrated = {
+    ...legacy,
+    id: legacy.id || createLocalRecordId(),
+    createdAt: legacy.createdAt || new Date().toISOString(),
+    category: legacy.category || '실험'
+  };
+  records.unshift(migrated);
+  try {
+    localStorage.setItem(LOCAL_RECORDS_KEY, JSON.stringify(records));
+  } catch (e) {
+    // Keep the legacy key intact if storage is full.
+  }
+}
 function renderSavedRecords(){
   const records = readLocalRecords();
   const targets = [
@@ -1634,6 +1667,7 @@ function renderScreen(id){
 
 window.addEventListener('load',()=>{
   installAuthStateListener();
+  migrateLegacyExperienceRecord();
   renderSavedRecords();
   refreshAccountUI();
   loadSavedPushState();
