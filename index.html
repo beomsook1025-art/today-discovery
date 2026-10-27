@@ -1454,6 +1454,8 @@ function installAuthStateListener(){
     // after the synchronous callback has returned.
     if(!currentUser){
       lastAuthHydratedUserId = null;
+      // A previous account's cloud-sync status must not remain visible after sign-out.
+      setRecordsSyncState('local');
       return;
     }
     if(event === 'SIGNED_IN' && lastAuthHydratedUserId !== currentUser.id){
