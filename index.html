@@ -9,11 +9,16 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="나 발견">
 <link rel="manifest" href="./manifest.webmanifest">
+<title id="appTitle">오늘의 나 발견</title>
 <script src="./version.js"></script>
-<script>document.title = "오늘의 나 발견 · v" + globalThis.APP_VERSION;</script>
+<script>
+  const appTitle = document.getElementById("appTitle");
+  if (appTitle && globalThis.APP_VERSION) {
+    appTitle.textContent = `오늘의 나 발견 · v${globalThis.APP_VERSION}`;
+  }
+</script>
 <link rel="icon" href="./icons/icon-192.png">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 나 발견</title>
 <style>
 :root{
   --bg:#F7F8F5; --surface:#FFFFFF; --surface2:#F0F4EE;
@@ -309,8 +314,8 @@ button{touch-action:manipulation}
   <div class="section">
     <div class="stat-row">
       <div class="stat"><div class="k">발견한 나</div><div class="v">12</div></div>
-      <div class="stat"><div class="k">해본 실험</div><div class="v">4</div></div>
-      <div class="stat"><div class="k">기록 일수</div><div class="v">5</div></div>
+      <div class="stat"><div class="k">해본 실험</div><div class="v" id="experimentCount">0</div></div>
+      <div class="stat"><div class="k">기록 일수</div><div class="v" id="recordDaysCount">0</div></div>
     </div>
   </div>
 
@@ -359,10 +364,13 @@ button{touch-action:manipulation}
 
 <div class="section">
     <div class="section-head"><div class="section-title">최근 발견</div><div class="small-link" onclick="show('record')">기록 보기</div></div>
-    <div id="recordSyncStatus" class="record-private-note" aria-live="polite">로그인 전에는 이 기기에 저장돼요.</div><div class="timeline">
-      <div class="timeline-item"><div class="timeline-mark">01</div><div><div class="timeline-date">9월 12일</div><div class="timeline-text">“돈과 시간에 쫓기지 않는 삶을 만들고 싶다.”</div></div></div>
-      <div class="timeline-item"><div class="timeline-mark">02</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“새로운 걸 만들어서 사람들에게 써보게 하고 싶다.”</div></div></div>
-      <div class="timeline-item"><div class="timeline-mark">03</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 하는 사람으로 남고 싶다.”</div></div></div>
+    <div id="recordSyncStatus" class="record-private-note" aria-live="polite">로그인 전에는 이 기기에 저장돼요.</div>
+    <button id="importGuestRecordsButton" class="secondary" type="button" onclick="importGuestRecordsToAccount()" style="display:none;width:100%;margin:8px 0 10px">로그인 전 기록 가져오기</button>
+    <div id="homeTimeline" class="timeline">
+      <div class="timeline-item" id="homeRecordEmptyState">
+        <div class="timeline-mark">✦</div>
+        <div><div class="timeline-date">아직 기록이 없어요</div><div class="timeline-text">오늘의 질문이나 경험을 기록하면 여기에 보여요.</div></div>
+      </div>
     </div>
   </div>
   <div class="section">
@@ -378,13 +386,13 @@ button{touch-action:manipulation}
 <section id="record" class="screen">
   <div class="screen-head"><button class="app-back" onclick="appBack()">‹</button><div><div class="eyebrow">MY LOG</div><div class="title">나의 기록</div></div><div style="margin-left:auto"><button class="icon-btn" onclick="show('addrecord')">＋</button></div></div>
   <div class="tag-grid" style="margin-bottom:13px"><span class="chip" style="background:var(--green);color:#fff">전체</span><span class="chip">질문</span><span class="chip">실험</span><span class="chip">성장</span></div>
-  <div class="timeline">
-    <div class="timeline-item"><div class="timeline-mark" style="background:#FFF0DE;color:#A06B2D">✓</div><div><div class="timeline-date">오늘</div><div class="timeline-text">오늘의 질문에 답했어요.<br>“내가 원하는 삶의 모습이 생각보다 선명하다.”</div></div></div>
-    <div class="timeline-item"><div class="timeline-mark" style="background:#EFEAFE;color:#6754B4">✦</div><div><div class="timeline-date">9월 12일 · 실험</div><div class="timeline-text">새로운 서비스 아이디어를 직접 만들어봤어요.<br>생각보다 만드는 게 재밌었어요.</div></div></div>
-    <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 10일</div><div class="timeline-text">“내가 만든 것이 사람에게 도움이 되면 좋겠다.”</div></div></div>
-    <div class="timeline-item"><div class="timeline-mark">✓</div><div><div class="timeline-date">9월 8일</div><div class="timeline-text">“후회를 덜 한 사람으로 남고 싶다.”</div></div></div>
+  <div id="recordTimeline" class="timeline">
+    <div class="timeline-item" id="recordEmptyState">
+      <div class="timeline-mark">✦</div>
+      <div><div class="timeline-date">아직 기록이 없어요</div><div class="timeline-text">오늘의 질문이나 경험을 기록하면 여기에 보여요.</div></div>
+    </div>
   </div>
-  <div class="section"><div class="card sim-insight"><b>v12 테스트</b><span>100명 사용자 시뮬레이션을 기준으로 질문·선택·기록·커뮤니티 흐름을 다듬었어요.</span></div></div>
+  <div class="section"><div class="card sim-insight"><b>나의 변화 돌아보기</b><span>질문과 기록을 모아, 시간이 지나며 달라진 생각을 돌아볼 수 있어요.</span></div></div>
 <div class="section"><div class="card empty">기록이 쌓일수록<br>‘예전의 나’와 ‘지금의 나’를 비교할 수 있어요.</div></div>
 </section>
 
@@ -780,16 +788,192 @@ let answers=questions.map(()=>[]);
 let skipped=questions.map(()=>false);
 
 const DAILY_PROGRESS_KEY = 'todayDiscoveryDailyProgress';
-const LOCAL_RECORDS_KEY = 'todayDiscoveryRecords';
+const LEGACY_LOCAL_RECORDS_KEY = 'todayDiscoveryRecords';
+const GUEST_RECORDS_KEY = 'todayDiscoveryRecords:guest';
+const USER_RECORDS_PREFIX = 'todayDiscoveryRecords:user:';
 const RECORD_MERGE_KEY = 'todayDiscoveryRecordsMergedUser';
 let recordsSyncState = localStorage.getItem('todayDiscoveryRecordsSyncState') || 'local';
-function setRecordsSyncState(state){ recordsSyncState=state; localStorage.setItem('todayDiscoveryRecordsSyncState',state); const el=document.getElementById('recordSyncStatus'); if(el) el.textContent=state==='synced'?'계정과 동기화됨':state==='syncing'?'계정에 동기화 중…':'이 기기에 저장됨'; }
-function readLocalRecords(){ try{ const raw=JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY)||'[]'); return Array.isArray(raw)?raw:[]; }catch(e){ return []; } }
-function recordFingerprint(r){ return [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f'); }
+
+function localRecordsStorageKey(){
+  return currentUser && currentUser.id
+    ? USER_RECORDS_PREFIX + currentUser.id
+    : GUEST_RECORDS_KEY;
+}
+function readRecordsFromKey(key){
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(raw)
+      ? raw.filter(record => record && typeof record === 'object' && !Array.isArray(record))
+      : [];
+  } catch (e) {
+    return [];
+  }
+}
+function readLocalRecords(){
+  return readRecordsFromKey(localRecordsStorageKey());
+}
+function setRecordsSyncState(state){
+  recordsSyncState=state;
+  localStorage.setItem('todayDiscoveryRecordsSyncState',state);
+  const el=document.getElementById('recordSyncStatus');
+  const guestRecords=readRecordsFromKey(GUEST_RECORDS_KEY);
+  const accountRecords=currentUser ? readLocalRecords() : [];
+  const accountIds=new Set(accountRecords.map(record => record.id).filter(Boolean));
+  const pendingGuestCount=guestRecords.filter(record => !record.id || !accountIds.has(record.id)).length;
+  if(el){
+    if(state==='synced') el.textContent='계정 기록 동기화됨';
+    else if(state==='syncing') el.textContent='계정에 동기화 중…';
+    else if(currentUser && pendingGuestCount) el.textContent='로그인 전 기록 ' + pendingGuestCount + '개는 이 기기에 따로 보관돼요.';
+    else if(currentUser && guestRecords.length) el.textContent='로그인 전 기록도 이 기기에 보관돼요.';
+    else el.textContent='이 기기에 저장됨';
+  }
+  const importButton=document.getElementById('importGuestRecordsButton');
+  if(importButton) importButton.style.display=(currentUser && pendingGuestCount && state!=='syncing') ? 'block' : 'none';
+}
+function migrateLegacyRecordList(){
+  try {
+    if(localStorage.getItem(GUEST_RECORDS_KEY) !== null) return;
+    const raw=localStorage.getItem(LEGACY_LOCAL_RECORDS_KEY);
+    if(!raw) return;
+    const parsed=JSON.parse(raw);
+    if(!Array.isArray(parsed)) return;
+    const guest=parsed
+      .filter(record => record && typeof record === 'object' && !Array.isArray(record))
+      .map(record => ({
+        ...record,
+        // Preserve the pre-ID key for records that may already exist in Supabase.
+        legacyLocalKey:record.id ? record.legacyLocalKey : (record.legacyLocalKey || recordFingerprint(record)),
+        id:record.id || createLocalRecordId(),
+        createdAt:record.createdAt || new Date().toISOString()
+      }));
+    localStorage.setItem(GUEST_RECORDS_KEY,JSON.stringify(guest));
+  } catch(e) {
+    // Preserve the legacy key if migration fails.
+  }
+}
+function createLocalRecordId(){
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+  return 'record-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+function saveLocalRecord(record){
+  const key=localRecordsStorageKey();
+  const normalized = {
+    ...record,
+    id: record.id || createLocalRecordId(),
+    createdAt: record.createdAt || new Date().toISOString()
+  };
+  const records = readRecordsFromKey(key);
+  records.unshift(normalized);
+  localStorage.setItem(key, JSON.stringify(records));
+  return normalized;
+}
+function recordFingerprint(r){
+  // Keep the old fingerprint for legacy records already synced to Supabase.
+  // New records use stable IDs so identical entries do not collide.
+  return r.legacyLocalKey || r.id || [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f');
+}
+function migrateLegacyExperienceRecord(){
+  let legacy;
+  try {
+    legacy = JSON.parse(localStorage.getItem('todayDiscoveryLatestExperience') || 'null');
+  } catch (e) {
+    return;
+  }
+  if(!legacy || typeof legacy !== 'object' || Array.isArray(legacy)) return;
+
+  // This key predates account-scoped storage, so never assign it silently to
+  // whichever account happens to be signed in on this device.
+  const records = readRecordsFromKey(GUEST_RECORDS_KEY);
+  const exists = records.some(record =>
+    (legacy.id && record.id === legacy.id) ||
+    (!legacy.id &&
+      record.title === legacy.title &&
+      record.note === legacy.note &&
+      record.mood === legacy.mood &&
+      record.date === legacy.date)
+  );
+  if(exists) return;
+
+  const migrated = {
+    ...legacy,
+    id: legacy.id || createLocalRecordId(),
+    createdAt: legacy.createdAt || new Date().toISOString(),
+    category: legacy.category || '실험'
+  };
+  records.unshift(migrated);
+  try {
+    localStorage.setItem(GUEST_RECORDS_KEY, JSON.stringify(records));
+  } catch (e) {
+    // Keep the legacy key intact if storage is full.
+  }
+}
+function renderSavedRecords(){
+  const records = readLocalRecords();
+  const targets = [
+    {listId:'homeTimeline', emptyId:'homeRecordEmptyState', home:true},
+    {listId:'recordTimeline', emptyId:'recordEmptyState', home:false}
+  ];
+
+  targets.forEach(target => {
+    const list = document.getElementById(target.listId);
+    if (!list) return;
+
+    list.querySelectorAll('[data-user-record="true"]').forEach(item => item.remove());
+    const empty = document.getElementById(target.emptyId);
+    if (empty) empty.style.display = records.length ? 'none' : '';
+
+    records.slice().reverse().forEach(record => {
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      item.dataset.userRecord = 'true';
+
+      const mark = document.createElement('div');
+      mark.className = 'timeline-mark';
+      const moodIcons = ['😐','🙂','😊','😍','🤩'];
+      const mood = Number(record.mood);
+      mark.textContent = Number.isInteger(mood) && mood >= 1 && mood <= 5
+        ? moodIcons[mood - 1]
+        : (record.hasPhoto ? '📷' : '✦');
+
+      const body = document.createElement('div');
+      const date = document.createElement('div');
+      date.className = 'timeline-date';
+      const dateText = record.date || (record.createdAt
+        ? new Date(record.createdAt).toLocaleDateString('ko-KR')
+        : '날짜 없음');
+      date.textContent = target.home
+        ? dateText
+        : dateText + (record.category ? ' · ' + record.category : '');
+
+      const text = document.createElement('div');
+      text.className = 'timeline-text';
+      text.style.whiteSpace = 'pre-line';
+      const photoNote = record.hasPhoto ? ' · 사진 원본 미저장' : '';
+      text.textContent = (record.title || '나의 새로운 기록') + photoNote +
+        (record.note ? '\n' + record.note : '');
+
+      body.append(date, text);
+      item.append(mark, body);
+      list.prepend(item);
+    });
+  });
+
+  const experimentCount = records.filter(record => record.category === '실험').length;
+  const experimentStat = document.getElementById('experimentCount');
+  if (experimentStat) experimentStat.textContent = String(experimentCount);
+
+  const dateKeys = records.map(record => record.date ||
+    (record.createdAt ? new Date(record.createdAt).toLocaleDateString('ko-KR') : ''))
+    .filter(Boolean);
+  const recordDaysStat = document.getElementById('recordDaysCount');
+  if (recordDaysStat) recordDaysStat.textContent = String(new Set(dateKeys).size);
+}
 async function mergeLocalRecordsAfterLogin(){
   const client=getSupabaseClient(); if(!client||!currentUser) return;
   const local=readLocalRecords();
-  if(!local.length){ setRecordsSyncState('synced'); return; }
+  if(!local.length){ setRecordsSyncState('local'); return; }
 
   setRecordsSyncState('syncing');
   try{
@@ -815,6 +999,7 @@ async function mergeLocalRecordsAfterLogin(){
       .from('user_records')
       .upsert(payload,{onConflict:'user_id,local_key',ignoreDuplicates:false});
     if(error) throw error;
+    if(!currentUser || currentUser.id !== userId) return;
 
     // Do not use a one-time user flag here: new local records can be created
     // after the first login and must remain eligible for later merges.
@@ -825,8 +1010,46 @@ async function mergeLocalRecordsAfterLogin(){
     }));
     setRecordsSyncState('synced');
   }catch(e){
-    setRecordsSyncState('local');
+    if(currentUser && currentUser.id === userId) setRecordsSyncState('local');
   }
+}
+
+function importGuestRecordsToAccount(){
+  if(!currentUser || !currentUser.id){
+    toast('먼저 로그인해 주세요.');
+    return;
+  }
+  const guest=readRecordsFromKey(GUEST_RECORDS_KEY);
+  if(!guest.length){
+    toast('가져올 로그인 전 기록이 없어요.');
+    return;
+  }
+  if(!window.confirm('로그인 전 이 기기에 저장된 ' + guest.length + '개의 기록을 현재 계정에 복사할까요? 기존 기록은 삭제하지 않아요.')) return;
+
+  const accountKey=localRecordsStorageKey();
+  const accountRecords=readRecordsFromKey(accountKey);
+  const normalizedGuest=guest.map(record => ({
+    ...record,
+    id:record.id || createLocalRecordId(),
+    createdAt:record.createdAt || new Date().toISOString()
+  }));
+  const existingIds=new Set(accountRecords.map(record => record.id).filter(Boolean));
+  const toImport=normalizedGuest.filter(record => !existingIds.has(record.id));
+
+  try {
+    // Save stable IDs back to the guest list first so retrying after a quota
+    // error cannot create duplicate account records.
+    localStorage.setItem(GUEST_RECORDS_KEY,JSON.stringify(normalizedGuest));
+    localStorage.setItem(accountKey,JSON.stringify([...toImport,...accountRecords]));
+  } catch(e) {
+    toast('기록을 가져오지 못했어요. 기기의 저장 공간을 확인해 주세요.');
+    return;
+  }
+
+  renderSavedRecords();
+  setRecordsSyncState('local');
+  void mergeLocalRecordsAfterLogin();
+  toast(toImport.length + '개 기록을 계정에 복사했어요.');
 }
 
 function todayKey(){
@@ -1097,30 +1320,24 @@ function saveExperience(){
     return;
   }
 
-  const record = {
-    title:'새로운 장소에 가보기',
-    date:new Date().toLocaleDateString('ko-KR'),
-    note,
-    mood:selectedMood || '',
-    hasPhoto:!!photoFile
-  };
-  localStorage.setItem('todayDiscoveryLatestExperience', JSON.stringify(record));
-
-  // Make the experience visible in the record screen.
-  const recordList = document.querySelector('#record .timeline');
-  if(recordList){
-    const moodText = selectedMood ? ['😐','🙂','😊','😍','🤩'][Number(selectedMood)-1] : '✦';
-    const photoText = photoFile ? ' · 사진 첨부' : '';
-    const newItem = document.createElement('div');
-    newItem.className = 'timeline-item';
-    newItem.innerHTML =
-      `<div class="timeline-mark" style="background:#EEF4EF;color:#416852">${moodText}</div>
-       <div>
-         <div class="timeline-date">방금 전 · 실험 기록</div>
-         <div class="timeline-text">새로운 장소에 가보기${photoText}<br>${escapeHTML(note || '오늘의 느낌을 기록했어요.')}</div>
-       </div>`;
-    recordList.prepend(newItem);
+  let record;
+  try {
+    record = saveLocalRecord({
+      title:'새로운 장소에 가보기',
+      category:'실험',
+      date:new Date().toLocaleDateString('ko-KR'),
+      note,
+      mood:selectedMood || '',
+      hasPhoto:!!photoFile
+    });
+  } catch (e) {
+    toast('기록을 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.');
+    return;
   }
+
+  if (currentUser) void mergeLocalRecordsAfterLogin();
+  else setRecordsSyncState('local');
+  renderSavedRecords();
 
   document.getElementById('experienceNote').value='';
   document.getElementById('photoInput').value='';
@@ -1135,7 +1352,9 @@ function saveExperience(){
     b.style.background='#fff'; b.style.color='var(--text)'; b.style.borderColor='var(--line)';
   });
 
-  toast('오늘의 실험 기록을 저장했어요.');
+  toast(photoFile
+    ? '기록은 저장했어요. 사진 원본은 아직 보관되지 않아요.'
+    : '오늘의 실험 기록을 저장했어요.');
   setTimeout(()=>show('record'), 650);
 }
 
@@ -1218,30 +1437,24 @@ function saveNewRecord(){
   const note=document.getElementById('newRecordNote').value.trim();
   const photo=document.getElementById('newRecordPhoto').files?.[0];
   if(!title && !note && !photo){toast('제목, 내용, 사진 중 하나는 남겨주세요.');return;}
-  const record={
-    title:title || '나의 새로운 기록',
-    category:newRecordCategory,
-    note:note || '사진으로 남긴 오늘의 기록',
-    mood:newRecordMood || '',
-    hasPhoto:!!photo,
-    date:new Date().toLocaleDateString('ko-KR')
-  };
-  const saved=readLocalRecords();
-  saved.unshift(record);
-  localStorage.setItem(LOCAL_RECORDS_KEY,JSON.stringify(saved));
-  if(currentUser) mergeLocalRecordsAfterLogin();
-
-  const list=document.querySelector('#record .timeline');
-  if(list){
-    const mark=newRecordMood ? ['😐','🙂','😊','😍','🤩'][Number(newRecordMood)-1] : '✦';
-    const photoText=photo?' · 사진 첨부':'';
-    const item=document.createElement('div');
-    item.className='timeline-item';
-    item.innerHTML=`<div class="timeline-mark" style="background:#EEF4EF;color:#416852">${mark}</div>
-      <div><div class="timeline-date">방금 전 · ${escapeHTML(newRecordCategory)}</div>
-      <div class="timeline-text">${escapeHTML(record.title)}${photoText}<br>${escapeHTML(record.note)}</div></div>`;
-    list.prepend(item);
+  let record;
+  try {
+    record = saveLocalRecord({
+      title:title || '나의 새로운 기록',
+      category:newRecordCategory,
+      note:note || '사진으로 남긴 오늘의 기록',
+      mood:newRecordMood || '',
+      hasPhoto:!!photo,
+      date:new Date().toLocaleDateString('ko-KR')
+    });
+  } catch (e) {
+    toast('기록을 이 기기에 저장하지 못했어요. 저장 공간을 확인해 주세요.');
+    return;
   }
+
+  if (currentUser) void mergeLocalRecordsAfterLogin();
+  else setRecordsSyncState('local');
+  renderSavedRecords();
 
   document.getElementById('newRecordTitle').value='';
   document.getElementById('newRecordNote').value='';
@@ -1249,7 +1462,9 @@ function saveNewRecord(){
   document.getElementById('newRecordPhotoPreview').innerHTML='<div><div style="font-size:28px">📷</div><div style="font-size:12px;font-weight:850;margin-top:4px">사진 추가</div></div>';
   newRecordMood=null;
   document.querySelectorAll('.new-mood-btn').forEach(b=>{b.style.background='#fff';b.style.color='var(--text)';b.style.borderColor='var(--line)'});
-  toast('새 기록을 저장했어요.');
+  toast(photo
+    ? '기록은 저장했어요. 사진 원본은 아직 보관되지 않아요.'
+    : '새 기록을 저장했어요.');
   setTimeout(()=>show('record'),500);
 }
 
@@ -1289,11 +1504,7 @@ document.addEventListener('click',(e)=>{
   if(e.target.closest('button,.option,.test-card,.week-item,.setting-row')) haptic();
 });
 window.addEventListener('pageshow',()=>{
-  const saved=JSON.parse(localStorage.getItem('todayDiscoveryRecords')||'[]');
-  if(saved.length){
-    const stat=document.querySelector('.stat-row .stat:nth-child(2) .v');
-    if(stat) stat.textContent=saved.length + 4;
-  }
+  renderSavedRecords();
 });
 
 
@@ -1305,6 +1516,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_ofqvZyCsYYbXUaCZIz5hGA_dxUS82G4
 
 let supabaseClient = null;
 let currentUser = null;
+let lastAuthHydratedUserId = null;
 let authMode = "login";
 let notificationsEnabled = localStorage.getItem("todayDiscoveryNotifications") === "true";
 let pushSubscription = null;
@@ -1322,10 +1534,39 @@ function installAuthStateListener(){
   const client=getSupabaseClient();
   if(!client || window.__todayDiscoveryAuthListenerInstalled) return;
   window.__todayDiscoveryAuthListenerInstalled=true;
-  client.auth.onAuthStateChange(async (_event,session)=>{
+  client.auth.onAuthStateChange((event,session)=>{
     currentUser=session?.user||null;
     updateAccountUI();
-    if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); await mergeLocalRecordsAfterLogin(); }
+    renderSavedRecords();
+
+    // Supabase warns against awaiting client calls inside this callback:
+    // it runs under an auth lock and can deadlock. Defer hydration until
+    // after the synchronous callback has returned.
+    if(!currentUser){
+      lastAuthHydratedUserId = null;
+      // A previous account's cloud-sync status must not remain visible after sign-out.
+      setRecordsSyncState('local');
+      return;
+    }
+    if(event === 'SIGNED_IN' && lastAuthHydratedUserId !== currentUser.id){
+      const userId = currentUser.id;
+      lastAuthHydratedUserId = userId;
+      setTimeout(async ()=>{
+        if(!currentUser || currentUser.id !== userId){
+          if(lastAuthHydratedUserId === userId) lastAuthHydratedUserId = null;
+          return;
+        }
+        try {
+          await hydrateProgramSession();
+          await hydrateProgressFromCloud();
+          await mergeLocalRecordsAfterLogin();
+        } catch(e) {
+          if(lastAuthHydratedUserId === userId) lastAuthHydratedUserId = null;
+          console.error('계정 데이터 동기화 실패', e);
+          setRecordsSyncState('local');
+        }
+      },0);
+    }
   });
 }
 
@@ -1406,11 +1647,10 @@ async function submitAuth(){
       return;
     }
     currentUser=r.data.user||null;
-    await hydrateProgramSession();
-    await hydrateProgressFromCloud();
     if(status)status.innerHTML='<div class="auth-ok">로그인 성공!</div>';
     if(msg)msg.textContent=currentUser?.email||"";
     updateAccountUI();
+    renderSavedRecords();
     setTimeout(closeAuth,500);
   }catch(e){
     let text=e?.message||"로그인에 실패했어요.";
@@ -1429,7 +1669,7 @@ function updateAccountUI(){
   if(currentUser){
     text.textContent=currentUser.email||"로그인됨";
     btn.textContent="로그아웃";
-    btn.onclick=async()=>{try{await getSupabaseClient()?.auth.signOut()}catch(e){} currentUser=null; programSession={currentDay:1,startedAt:null,lastActiveAt:null,completedAt:null}; updateAccountUI();};
+    btn.onclick=async()=>{try{await getSupabaseClient()?.auth.signOut()}catch(e){} currentUser=null; programSession={currentDay:1,startedAt:null,lastActiveAt:null,completedAt:null}; updateAccountUI(); renderSavedRecords();};
   }else{
     text.textContent="로그인하지 않았어요.";
     btn.textContent="로그인";
@@ -1439,13 +1679,20 @@ function updateAccountUI(){
 
 async function refreshAccountUI(){
   const client=getSupabaseClient();
-  if(!client){ currentUser=null; updateAccountUI(); return; }
+  if(!client){ currentUser=null; updateAccountUI(); renderSavedRecords(); return; }
   try{
     const {data}=await client.auth.getSession();
     currentUser=data?.session?.user || null;
   }catch(e){ currentUser=null; }
   updateAccountUI();
-  if(currentUser){ await hydrateProgramSession(); await hydrateProgressFromCloud(); await mergeLocalRecordsAfterLogin(); }
+  renderSavedRecords();
+  if(currentUser){
+    const userId = currentUser.id;
+    await hydrateProgramSession();
+    await hydrateProgressFromCloud();
+    await mergeLocalRecordsAfterLogin();
+    if(currentUser?.id === userId) lastAuthHydratedUserId = userId;
+  }
 }
 
 function loadSavedPushState(){
@@ -1514,6 +1761,9 @@ function renderScreen(id){
 
 window.addEventListener('load',()=>{
   installAuthStateListener();
+  migrateLegacyRecordList();
+  migrateLegacyExperienceRecord();
+  renderSavedRecords();
   refreshAccountUI();
   loadSavedPushState();
   appHistory.length=1;
