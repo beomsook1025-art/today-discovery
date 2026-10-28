@@ -365,6 +365,7 @@ button{touch-action:manipulation}
 <div class="section">
     <div class="section-head"><div class="section-title">최근 발견</div><div class="small-link" onclick="show('record')">기록 보기</div></div>
     <div id="recordSyncStatus" class="record-private-note" aria-live="polite">로그인 전에는 이 기기에 저장돼요.</div>
+    <button id="importGuestRecordsButton" class="secondary" type="button" onclick="importGuestRecordsToAccount()" style="display:none;width:100%;margin:8px 0 10px">로그인 전 기록 가져오기</button>
     <div id="homeTimeline" class="timeline">
       <div class="timeline-item" id="homeRecordEmptyState">
         <div class="timeline-mark">✦</div>
@@ -787,16 +788,61 @@ let answers=questions.map(()=>[]);
 let skipped=questions.map(()=>false);
 
 const DAILY_PROGRESS_KEY = 'todayDiscoveryDailyProgress';
-const LOCAL_RECORDS_KEY = 'todayDiscoveryRecords';
+const LEGACY_LOCAL_RECORDS_KEY = 'todayDiscoveryRecords';
+const GUEST_RECORDS_KEY = 'todayDiscoveryRecords:guest';
+const USER_RECORDS_PREFIX = 'todayDiscoveryRecords:user:';
 const RECORD_MERGE_KEY = 'todayDiscoveryRecordsMergedUser';
 let recordsSyncState = localStorage.getItem('todayDiscoveryRecordsSyncState') || 'local';
-function setRecordsSyncState(state){ recordsSyncState=state; localStorage.setItem('todayDiscoveryRecordsSyncState',state); const el=document.getElementById('recordSyncStatus'); if(el) el.textContent=state==='synced'?'계정과 동기화됨':state==='syncing'?'계정에 동기화 중…':'이 기기에 저장됨'; }
-function readLocalRecords(){
+
+function localRecordsStorageKey(){
+  return currentUser && currentUser.id
+    ? USER_RECORDS_PREFIX + currentUser.id
+    : GUEST_RECORDS_KEY;
+}
+function readRecordsFromKey(key){
   try {
-    const raw = JSON.parse(localStorage.getItem(LOCAL_RECORDS_KEY) || '[]');
-    return Array.isArray(raw) ? raw.filter(record => record && typeof record === 'object' && !Array.isArray(record)) : [];
+    const raw = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(raw)
+      ? raw.filter(record => record && typeof record === 'object' && !Array.isArray(record))
+      : [];
   } catch (e) {
     return [];
+  }
+}
+function readLocalRecords(){
+  return readRecordsFromKey(localRecordsStorageKey());
+}
+function setRecordsSyncState(state){
+  recordsSyncState=state;
+  localStorage.setItem('todayDiscoveryRecordsSyncState',state);
+  const el=document.getElementById('recordSyncStatus');
+  const guestCount=readRecordsFromKey(GUEST_RECORDS_KEY).length;
+  if(el){
+    if(state==='synced') el.textContent='계정 기록 동기화됨';
+    else if(state==='syncing') el.textContent='계정에 동기화 중…';
+    else if(currentUser && guestCount) el.textContent='로그인 전 기록 ' + guestCount + '개는 이 기기에 따로 보관돼요.';
+    else el.textContent='이 기기에 저장됨';
+  }
+  const importButton=document.getElementById('importGuestRecordsButton');
+  if(importButton) importButton.style.display=(currentUser && guestCount) ? 'block' : 'none';
+}
+function migrateLegacyRecordList(){
+  try {
+    if(localStorage.getItem(GUEST_RECORDS_KEY) !== null) return;
+    const raw=localStorage.getItem(LEGACY_LOCAL_RECORDS_KEY);
+    if(!raw) return;
+    const parsed=JSON.parse(raw);
+    if(!Array.isArray(parsed)) return;
+    const guest=parsed
+      .filter(record => record && typeof record === 'object' && !Array.isArray(record))
+      .map(record => ({
+        ...record,
+        id:record.id || createLocalRecordId(),
+        createdAt:record.createdAt || new Date().toISOString()
+      }));
+    localStorage.setItem(GUEST_RECORDS_KEY,JSON.stringify(guest));
+  } catch(e) {
+    // Preserve the legacy key if migration fails.
   }
 }
 function createLocalRecordId(){
@@ -806,14 +852,15 @@ function createLocalRecordId(){
   return 'record-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 }
 function saveLocalRecord(record){
+  const key=localRecordsStorageKey();
   const normalized = {
     ...record,
     id: record.id || createLocalRecordId(),
     createdAt: record.createdAt || new Date().toISOString()
   };
-  const records = readLocalRecords();
+  const records = readRecordsFromKey(key);
   records.unshift(normalized);
-  localStorage.setItem(LOCAL_RECORDS_KEY, JSON.stringify(records));
+  localStorage.setItem(key, JSON.stringify(records));
   return normalized;
 }
 function recordFingerprint(r){
@@ -830,7 +877,9 @@ function migrateLegacyExperienceRecord(){
   }
   if(!legacy || typeof legacy !== 'object' || Array.isArray(legacy)) return;
 
-  const records = readLocalRecords();
+  // This key predates account-scoped storage, so never assign it silently to
+  // whichever account happens to be signed in on this device.
+  const records = readRecordsFromKey(GUEST_RECORDS_KEY);
   const exists = records.some(record =>
     (legacy.id && record.id === legacy.id) ||
     (!legacy.id &&
@@ -849,7 +898,7 @@ function migrateLegacyExperienceRecord(){
   };
   records.unshift(migrated);
   try {
-    localStorage.setItem(LOCAL_RECORDS_KEY, JSON.stringify(records));
+    localStorage.setItem(GUEST_RECORDS_KEY, JSON.stringify(records));
   } catch (e) {
     // Keep the legacy key intact if storage is full.
   }
@@ -944,6 +993,7 @@ async function mergeLocalRecordsAfterLogin(){
       .from('user_records')
       .upsert(payload,{onConflict:'user_id,local_key',ignoreDuplicates:false});
     if(error) throw error;
+    if(!currentUser || currentUser.id !== userId) return;
 
     // Do not use a one-time user flag here: new local records can be created
     // after the first login and must remain eligible for later merges.
@@ -954,8 +1004,46 @@ async function mergeLocalRecordsAfterLogin(){
     }));
     setRecordsSyncState('synced');
   }catch(e){
-    setRecordsSyncState('local');
+    if(currentUser && currentUser.id === userId) setRecordsSyncState('local');
   }
+}
+
+function importGuestRecordsToAccount(){
+  if(!currentUser || !currentUser.id){
+    toast('먼저 로그인해 주세요.');
+    return;
+  }
+  const guest=readRecordsFromKey(GUEST_RECORDS_KEY);
+  if(!guest.length){
+    toast('가져올 로그인 전 기록이 없어요.');
+    return;
+  }
+  if(!window.confirm('로그인 전 이 기기에 저장된 ' + guest.length + '개의 기록을 현재 계정에 복사할까요? 기존 기록은 삭제하지 않아요.')) return;
+
+  const accountKey=localRecordsStorageKey();
+  const accountRecords=readRecordsFromKey(accountKey);
+  const normalizedGuest=guest.map(record => ({
+    ...record,
+    id:record.id || createLocalRecordId(),
+    createdAt:record.createdAt || new Date().toISOString()
+  }));
+  const existingIds=new Set(accountRecords.map(record => record.id).filter(Boolean));
+  const toImport=normalizedGuest.filter(record => !existingIds.has(record.id));
+
+  try {
+    // Save stable IDs back to the guest list first so retrying after a quota
+    // error cannot create duplicate account records.
+    localStorage.setItem(GUEST_RECORDS_KEY,JSON.stringify(normalizedGuest));
+    localStorage.setItem(accountKey,JSON.stringify([...toImport,...accountRecords]));
+  } catch(e) {
+    toast('기록을 가져오지 못했어요. 기기의 저장 공간을 확인해 주세요.');
+    return;
+  }
+
+  renderSavedRecords();
+  setRecordsSyncState('local');
+  void mergeLocalRecordsAfterLogin();
+  toast(toImport.length + '개 기록을 계정에 복사했어요.');
 }
 
 function todayKey(){
@@ -1241,11 +1329,6 @@ function saveExperience(){
     return;
   }
 
-  // Keep the previous latest-experience key for compatibility with older code.
-  try {
-    localStorage.setItem('todayDiscoveryLatestExperience', JSON.stringify(record));
-  } catch (e) {}
-
   if (currentUser) void mergeLocalRecordsAfterLogin();
   else setRecordsSyncState('local');
   renderSavedRecords();
@@ -1448,6 +1531,7 @@ function installAuthStateListener(){
   client.auth.onAuthStateChange((event,session)=>{
     currentUser=session?.user||null;
     updateAccountUI();
+    renderSavedRecords();
 
     // Supabase warns against awaiting client calls inside this callback:
     // it runs under an auth lock and can deadlock. Defer hydration until
@@ -1560,6 +1644,7 @@ async function submitAuth(){
     if(status)status.innerHTML='<div class="auth-ok">로그인 성공!</div>';
     if(msg)msg.textContent=currentUser?.email||"";
     updateAccountUI();
+    renderSavedRecords();
     setTimeout(closeAuth,500);
   }catch(e){
     let text=e?.message||"로그인에 실패했어요.";
@@ -1578,7 +1663,7 @@ function updateAccountUI(){
   if(currentUser){
     text.textContent=currentUser.email||"로그인됨";
     btn.textContent="로그아웃";
-    btn.onclick=async()=>{try{await getSupabaseClient()?.auth.signOut()}catch(e){} currentUser=null; programSession={currentDay:1,startedAt:null,lastActiveAt:null,completedAt:null}; updateAccountUI();};
+    btn.onclick=async()=>{try{await getSupabaseClient()?.auth.signOut()}catch(e){} currentUser=null; programSession={currentDay:1,startedAt:null,lastActiveAt:null,completedAt:null}; updateAccountUI(); renderSavedRecords();};
   }else{
     text.textContent="로그인하지 않았어요.";
     btn.textContent="로그인";
@@ -1588,12 +1673,13 @@ function updateAccountUI(){
 
 async function refreshAccountUI(){
   const client=getSupabaseClient();
-  if(!client){ currentUser=null; updateAccountUI(); return; }
+  if(!client){ currentUser=null; updateAccountUI(); renderSavedRecords(); return; }
   try{
     const {data}=await client.auth.getSession();
     currentUser=data?.session?.user || null;
   }catch(e){ currentUser=null; }
   updateAccountUI();
+  renderSavedRecords();
   if(currentUser){
     const userId = currentUser.id;
     await hydrateProgramSession();
@@ -1669,6 +1755,7 @@ function renderScreen(id){
 
 window.addEventListener('load',()=>{
   installAuthStateListener();
+  migrateLegacyRecordList();
   migrateLegacyExperienceRecord();
   renderSavedRecords();
   refreshAccountUI();
