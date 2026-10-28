@@ -816,15 +816,19 @@ function setRecordsSyncState(state){
   recordsSyncState=state;
   localStorage.setItem('todayDiscoveryRecordsSyncState',state);
   const el=document.getElementById('recordSyncStatus');
-  const guestCount=readRecordsFromKey(GUEST_RECORDS_KEY).length;
+  const guestRecords=readRecordsFromKey(GUEST_RECORDS_KEY);
+  const accountRecords=currentUser ? readLocalRecords() : [];
+  const accountIds=new Set(accountRecords.map(record => record.id).filter(Boolean));
+  const pendingGuestCount=guestRecords.filter(record => !record.id || !accountIds.has(record.id)).length;
   if(el){
     if(state==='synced') el.textContent='계정 기록 동기화됨';
     else if(state==='syncing') el.textContent='계정에 동기화 중…';
-    else if(currentUser && guestCount) el.textContent='로그인 전 기록 ' + guestCount + '개는 이 기기에 따로 보관돼요.';
+    else if(currentUser && pendingGuestCount) el.textContent='로그인 전 기록 ' + pendingGuestCount + '개는 이 기기에 따로 보관돼요.';
+    else if(currentUser && guestRecords.length) el.textContent='로그인 전 기록도 이 기기에 보관돼요.';
     else el.textContent='이 기기에 저장됨';
   }
   const importButton=document.getElementById('importGuestRecordsButton');
-  if(importButton) importButton.style.display=(currentUser && guestCount) ? 'block' : 'none';
+  if(importButton) importButton.style.display=(currentUser && pendingGuestCount && state!=='syncing') ? 'block' : 'none';
 }
 function migrateLegacyRecordList(){
   try {
