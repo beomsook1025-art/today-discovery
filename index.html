@@ -841,6 +841,8 @@ function migrateLegacyRecordList(){
       .filter(record => record && typeof record === 'object' && !Array.isArray(record))
       .map(record => ({
         ...record,
+        // Preserve the pre-ID key for records that may already exist in Supabase.
+        legacyLocalKey:record.id ? record.legacyLocalKey : (record.legacyLocalKey || recordFingerprint(record)),
         id:record.id || createLocalRecordId(),
         createdAt:record.createdAt || new Date().toISOString()
       }));
@@ -870,7 +872,7 @@ function saveLocalRecord(record){
 function recordFingerprint(r){
   // Keep the old fingerprint for legacy records already synced to Supabase.
   // New records use stable IDs so identical entries do not collide.
-  return r.id || [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f');
+  return r.legacyLocalKey || r.id || [r.title||'',r.category||'',r.note||'',r.mood||'',r.date||''].join('\\u001f');
 }
 function migrateLegacyExperienceRecord(){
   let legacy;
